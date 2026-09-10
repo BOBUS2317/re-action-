@@ -57,7 +57,7 @@ def ask_qwen(message: str, context: list[dict], history: list[dict]) -> str:
         json={
             "model": QWEN_MODEL,
             "messages": messages,
-            "temperature": 0.1,
+            "temperature": 0.7,
             "top_p": 0.85,
             "repeat_penalty": 1.1,
             "max_tokens": 300,
