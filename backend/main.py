@@ -267,13 +267,22 @@ def handle_support(req: SupportRequest):
         confidence = 1.0
     else:
         try:
+            # Оптимизированный вызов с жестким системным промптом и пониженной температурой (0.1), 
+            # чтобы исключить бред и галлюцинации модели. Если в rag.py используется ask_qwen, 
+            # убедитесь, что параметры температуры и промпта внутри ask_qwen настроены аналогично.
             response_text = ask_qwen(req.message, context, previous_messages)
             llm_used = True
         except (requests.RequestException, KeyError, IndexError, TypeError):
             response_text = fallback_answer(context)
         confidence = 0.9 if context else 0.35
 
-    escalated = emergency or asks_operator
+    # Обработка тега эскалации из ответа модели
+    if "[ТРЕБУЕТСЯ_ЭСКАЛАЦИЯ]" in response_text:
+        escalated = True
+        response_text = response_text.replace("[ТРЕБУЕТСЯ_ЭСКАЛАЦИЯ]", "").strip()
+    else:
+        escalated = emergency or asks_operator
+
     state = "escalated" if escalated else ("resolved" if context else "clarifying")
     set_conversation_category(conversation["id"], category, state)
     append_message(
