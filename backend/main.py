@@ -15,15 +15,20 @@ from database import (
     append_message,
     create_ticket,
     database_stats,
+    create_telegram_link_code,
     ensure_user,
     get_history,
     get_or_create_conversation,
     get_ticket,
+    get_telegram_profile,
+    get_user_profile,
     init_db,
     list_announcements,
     list_categories,
     list_user_receipts,
     list_user_tickets,
+    link_website_by_telegram_code,
+    register_telegram_user,
     search_knowledge,
     set_conversation_category,
     upsert_knowledge_article,
@@ -151,6 +156,26 @@ class ReceiptRequest(BaseModel):
     paid_at: str | None = None
 
 
+class TelegramRegistrationRequest(BaseModel):
+    telegram_id: str = Field(min_length=1, max_length=32)
+    telegram_username: str | None = Field(default=None, max_length=64)
+    display_name: str = Field(min_length=1, max_length=120)
+    phone: str = Field(min_length=7, max_length=32)
+    city: str = Field(min_length=1, max_length=80)
+    street: str = Field(min_length=1, max_length=180)
+    house: str = Field(min_length=1, max_length=30)
+    apartment: str | None = Field(default=None, max_length=30)
+
+
+class TelegramLinkRequest(BaseModel):
+    web_user_id: str = Field(min_length=1, max_length=120)
+    code: str = Field(pattern=r"^\d{6}$")
+
+
+class TelegramIdRequest(BaseModel):
+    telegram_id: str = Field(min_length=1, max_length=32)
+
+
 class KnowledgeArticleRequest(BaseModel):
     category: str
     slug: str = Field(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$", max_length=100)
@@ -183,6 +208,40 @@ def categories():
 def create_address(user_id: str, req: AddressRequest):
     ensure_user(user_id, "web")
     return add_address(user_id=user_id, **req.model_dump())
+
+
+@app.get("/api/users/{user_id}/profile")
+def user_profile(user_id: str):
+    profile = get_user_profile(user_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    return profile
+
+
+@app.post("/api/telegram/register", status_code=201)
+def telegram_register(req: TelegramRegistrationRequest):
+    try:
+        profile = register_telegram_user(**req.model_dump())
+        code = create_telegram_link_code(profile["id"])
+        return {"user": profile, "link_code": code, "expires_in_minutes": 15}
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Не удалось сохранить регистрацию") from exc
+
+
+@app.post("/api/telegram/link-code")
+def telegram_link_code(req: TelegramIdRequest):
+    profile = get_telegram_profile(req.telegram_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Сначала пройдите регистрацию в Telegram")
+    return {"link_code": create_telegram_link_code(profile["id"]), "expires_in_minutes": 15}
+
+
+@app.post("/api/users/link-telegram")
+def link_telegram(req: TelegramLinkRequest):
+    profile = link_website_by_telegram_code(req.web_user_id, req.code)
+    if not profile:
+        raise HTTPException(status_code=400, detail="Код неверный или срок его действия истёк")
+    return {"user": profile}
 
 
 @app.post("/api/support", response_model=SupportResponse)

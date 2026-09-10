@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import re
+import secrets
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -105,6 +106,134 @@ def add_address(
             (user_id, city, street, house, building, apartment, entrance, floor, int(is_primary)),
         )
         return dict(conn.execute("SELECT * FROM addresses WHERE id=?", (cursor.lastrowid,)).fetchone())
+
+
+def get_user_profile(user_id: str) -> dict[str, Any] | None:
+    with connect() as conn:
+        row = conn.execute(
+            """
+            SELECT u.id, u.channel, u.display_name, u.phone, u.telegram_id,
+                   u.telegram_username, u.registration_completed,
+                   a.id AS address_id, a.city, a.street, a.house, a.building,
+                   a.apartment, a.entrance, a.floor
+            FROM users u
+            LEFT JOIN addresses a ON a.user_id=u.id AND a.is_primary=1
+            WHERE u.id=?
+            """,
+            (user_id,),
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def get_telegram_profile(telegram_id: str) -> dict[str, Any] | None:
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT id FROM users WHERE telegram_id=? AND registration_completed=1",
+            (telegram_id,),
+        ).fetchone()
+    return get_user_profile(str(row["id"])) if row else None
+
+
+def register_telegram_user(
+    telegram_id: str,
+    telegram_username: str | None,
+    display_name: str,
+    phone: str,
+    city: str,
+    street: str,
+    house: str,
+    apartment: str | None,
+) -> dict[str, Any]:
+    user_id = f"telegram-{telegram_id}"
+    now = utc_now()
+    with connect() as conn:
+        existing = conn.execute(
+            "SELECT id FROM users WHERE id=? OR telegram_id=? OR (channel='telegram' AND external_id=?)",
+            (user_id, telegram_id, telegram_id),
+        ).fetchone()
+        if existing:
+            user_id = str(existing["id"])
+            conn.execute(
+                """
+                UPDATE users SET external_id=?, display_name=?, phone=?, telegram_id=?, telegram_username=?,
+                    registration_completed=1, updated_at=? WHERE id=?
+                """,
+                (telegram_id, display_name, phone, telegram_id, telegram_username, now, user_id),
+            )
+        else:
+            conn.execute(
+                """
+                INSERT INTO users(
+                  id, channel, external_id, display_name, phone, telegram_id,
+                  telegram_username, registration_completed, created_at, updated_at
+                ) VALUES (?, 'telegram', ?, ?, ?, ?, ?, 1, ?, ?)
+                """,
+                (user_id, telegram_id, display_name, phone, telegram_id, telegram_username, now, now),
+            )
+
+        address = conn.execute(
+            "SELECT id FROM addresses WHERE user_id=? AND is_primary=1",
+            (user_id,),
+        ).fetchone()
+        if address:
+            conn.execute(
+                """
+                UPDATE addresses SET city=?, street=?, house=?, apartment=? WHERE id=?
+                """,
+                (city, street, house, apartment, address["id"]),
+            )
+        else:
+            conn.execute(
+                """
+                INSERT INTO addresses(user_id, city, street, house, apartment, is_primary)
+                VALUES (?, ?, ?, ?, ?, 1)
+                """,
+                (user_id, city, street, house, apartment),
+            )
+    profile = get_user_profile(user_id)
+    if not profile:
+        raise RuntimeError("Telegram registration was not saved")
+    return profile
+
+
+def create_telegram_link_code(user_id: str, ttl_minutes: int = 15) -> str:
+    expires_at = (datetime.now(timezone.utc) + timedelta(minutes=ttl_minutes)).isoformat(timespec="seconds")
+    with connect() as conn:
+        conn.execute("DELETE FROM telegram_link_codes WHERE user_id=? OR expires_at<?", (user_id, utc_now()))
+        for _ in range(10):
+            code = f"{secrets.randbelow(1_000_000):06d}"
+            try:
+                conn.execute(
+                    "INSERT INTO telegram_link_codes(code, user_id, expires_at) VALUES (?, ?, ?)",
+                    (code, user_id, expires_at),
+                )
+                return code
+            except sqlite3.IntegrityError:
+                continue
+    raise RuntimeError("Could not generate a unique Telegram link code")
+
+
+def link_website_by_telegram_code(web_user_id: str, code: str) -> dict[str, Any] | None:
+    now = utc_now()
+    with connect() as conn:
+        link = conn.execute(
+            """
+            SELECT user_id FROM telegram_link_codes
+            WHERE code=? AND used_at IS NULL AND expires_at>=?
+            """,
+            (code, now),
+        ).fetchone()
+        if not link:
+            return None
+        telegram_user_id = str(link["user_id"])
+        if web_user_id != telegram_user_id:
+            web_user = conn.execute("SELECT id FROM users WHERE id=?", (web_user_id,)).fetchone()
+            if web_user:
+                conn.execute("UPDATE conversations SET user_id=? WHERE user_id=?", (telegram_user_id, web_user_id))
+                conn.execute("UPDATE tickets SET user_id=? WHERE user_id=?", (telegram_user_id, web_user_id))
+                conn.execute("UPDATE ratings SET user_id=? WHERE user_id=?", (telegram_user_id, web_user_id))
+        conn.execute("UPDATE telegram_link_codes SET used_at=? WHERE code=?", (now, code))
+    return get_user_profile(telegram_user_id)
 
 
 def get_or_create_conversation(
@@ -473,6 +602,7 @@ def database_stats() -> dict[str, int]:
     tables = (
         "users", "addresses", "conversations", "messages", "knowledge_articles",
         "tickets", "ticket_events", "ratings", "announcements", "meter_readings", "receipts",
+        "telegram_link_codes",
     )
     with connect() as conn:
         return {table: int(conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]) for table in tables}

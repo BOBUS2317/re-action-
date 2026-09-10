@@ -21,6 +21,18 @@ interface Receipt {
   due_at?: string | null;
 }
 
+interface UserProfile {
+  id: string;
+  display_name: string | null;
+  phone: string | null;
+  telegram_username: string | null;
+  registration_completed: number;
+  city: string | null;
+  street: string | null;
+  house: string | null;
+  apartment: string | null;
+}
+
 const QUICK_REPLIES = [
   "Куда платить за воду?",
   "Подать показания счётчиков",
@@ -32,6 +44,14 @@ const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 function formatTime(date: Date) {
   return date.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+}
+
+function savedUserId() {
+  const existing = localStorage.getItem("reaction_user_id");
+  if (existing) return existing;
+  const created = `web-${crypto.randomUUID()}`;
+  localStorage.setItem("reaction_user_id", created);
+  return created;
 }
 
 function BotAvatar() {
@@ -113,7 +133,10 @@ export default function Chat() {
   const [createdAt] = useState(() => new Date());
   const [lastUserText, setLastUserText] = useState("");
   const [actionMessage, setActionMessage] = useState("");
-  const userId = useRef(`web-${crypto.randomUUID()}`);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [linkCode, setLinkCode] = useState("");
+  const [linkStatus, setLinkStatus] = useState("");
+  const userId = useRef(savedUserId());
   const nextMessageId = useRef(2);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -121,6 +144,13 @@ export default function Chat() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typing]);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/users/${encodeURIComponent(userId.current)}/profile`)
+      .then((response) => response.ok ? response.json() : null)
+      .then((data: UserProfile | null) => setProfile(data))
+      .catch(() => undefined);
+  }, []);
 
   async function sendMessage(text: string) {
     if (!text.trim()) return;
@@ -264,6 +294,30 @@ export default function Chat() {
     }
   }
 
+  async function linkTelegram() {
+    if (!/^\d{6}$/.test(linkCode)) {
+      setLinkStatus("Введите шестизначный код из Telegram.");
+      return;
+    }
+    setLinkStatus("Проверяю код…");
+    try {
+      const response = await fetch(`${API_URL}/api/users/link-telegram`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ web_user_id: userId.current, code: linkCode }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.detail);
+      userId.current = result.user.id;
+      localStorage.setItem("reaction_user_id", result.user.id);
+      setProfile(result.user);
+      setLinkCode("");
+      setLinkStatus("Telegram подключён. Данные и история теперь общие.");
+    } catch (error) {
+      setLinkStatus(error instanceof Error ? error.message : "Не удалось проверить код.");
+    }
+  }
+
   function handleKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -295,7 +349,7 @@ export default function Chat() {
             <div className="w-7 h-7 rounded-full bg-[#1B5EBE] flex items-center justify-center text-white text-[11px] font-600">
               ИП
             </div>
-            <span className="text-[13px] font-500 text-[#334155]">Иван П.</span>
+            <span className="text-[13px] font-500 text-[#334155]">{profile?.display_name ?? "Гость"}</span>
           </div>
         </div>
       </header>
@@ -376,6 +430,41 @@ export default function Chat() {
           </div>
 
           <div className="px-6 py-5 space-y-4 flex-1">
+            <div className="rounded-xl border border-[#BFDBFE] bg-white p-4">
+              <p className="text-[13px] font-700 text-[#0F172A]">
+                {profile?.registration_completed ? "Telegram подключён" : "Связать с Telegram"}
+              </p>
+              {profile?.registration_completed ? (
+                <div className="text-[12px] text-[#64748B] mt-2 space-y-1">
+                  <p>{profile.phone}</p>
+                  <p>
+                    {[profile.city, profile.street, profile.house, profile.apartment && `кв. ${profile.apartment}`]
+                      .filter(Boolean).join(", ")}
+                  </p>
+                  {profile.telegram_username && <p>@{profile.telegram_username}</p>}
+                </div>
+              ) : (
+                <>
+                  <p className="text-[11px] text-[#64748B] mt-1">
+                    Пройдите /register в боте и введите полученный код.
+                  </p>
+                  <div className="flex gap-2 mt-3">
+                    <input
+                      value={linkCode}
+                      onChange={(event) => setLinkCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder="000000"
+                      inputMode="numeric"
+                      className="min-w-0 flex-1 rounded-lg border border-[#CBD5E1] px-3 py-2 text-[13px] font-mono outline-none focus:border-[#1B5EBE]"
+                    />
+                    <button onClick={linkTelegram} className="rounded-lg bg-[#1B5EBE] px-3 text-[12px] font-600 text-white">
+                      Связать
+                    </button>
+                  </div>
+                </>
+              )}
+              {linkStatus && <p className="text-[11px] text-[#64748B] mt-2">{linkStatus}</p>}
+            </div>
+
             {[
               { label: "ID обращения", value: currentTicketId ?? "Ещё не создано", mono: true },
               { label: "Категория", value: category },

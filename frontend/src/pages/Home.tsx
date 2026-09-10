@@ -1,5 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+const API_URL = import.meta.env.VITE_API_URL ?? "";
+
+interface UserProfile {
+  display_name: string | null;
+  city: string | null;
+  street: string | null;
+  house: string | null;
+  apartment: string | null;
+}
 
 const TILES = [
   { id: 1, icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7"><path d="M12 2C8 2 4 5.5 4 9.5c0 5.25 8 12.5 8 12.5s8-7.25 8-12.5C20 5.5 16 2 12 2z"/><circle cx="12" cy="9.5" r="2.5"/></svg>), label: "Куда платить\nза воду", color: "blue", badge: null },
@@ -34,7 +44,23 @@ const appealStatusMap: Record<string, string> = {
 export default function Home() {
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const userId = localStorage.getItem("reaction_user_id");
+    if (!userId) return;
+    fetch(`${API_URL}/api/users/${encodeURIComponent(userId)}/profile`)
+      .then((response) => response.ok ? response.json() : null)
+      .then((data: UserProfile | null) => setProfile(data))
+      .catch(() => undefined);
+  }, []);
+
+  const displayName = profile?.display_name ?? "Гость";
+  const initials = displayName.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "Г";
+  const address = profile?.street
+    ? [profile.city, `ул. ${profile.street}`, profile.house, profile.apartment && `кв. ${profile.apartment}`].filter(Boolean).join(", ")
+    : "Адрес не указан";
 
   return (
     <div className="min-h-screen bg-white font-sans text-[#0F172A]" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -49,12 +75,12 @@ export default function Home() {
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5 text-[13px] text-[#64748B]">
-              <span className="font-medium text-[#334155]">ул. Ленина, 15</span>
+              <span className="font-medium text-[#334155]">{address}</span>
             </div>
             <div className="w-px h-5 bg-[#E2E8F0]" />
             <button className="flex items-center gap-2 rounded-full hover:bg-[#F1F5F9] px-2 py-1 transition-colors">
-              <div className="w-8 h-8 rounded-full bg-[#1B5EBE] flex items-center justify-center text-white text-[13px] font-semibold">ИП</div>
-              <span className="text-[13px] font-medium text-[#334155]">Иван П.</span>
+              <div className="w-8 h-8 rounded-full bg-[#1B5EBE] flex items-center justify-center text-white text-[13px] font-semibold">{initials}</div>
+              <span className="text-[13px] font-medium text-[#334155]">{displayName}</span>
             </button>
           </div>
         </div>
@@ -62,7 +88,7 @@ export default function Home() {
 
       <section className="bg-gradient-to-b from-[#EBF2FF] to-white pt-14 pb-12 px-8">
         <div className="max-w-[720px] mx-auto text-center">
-          <h1 className="text-[36px] font-extrabold tracking-tight text-[#0F172A] mb-2">Здравствуйте, Иван!</h1>
+          <h1 className="text-[36px] font-extrabold tracking-tight text-[#0F172A] mb-2">Здравствуйте, {displayName}!</h1>
           <p className="text-[18px] text-[#64748B] mb-8">Чем могу помочь сегодня?</p>
 
           <div className="relative max-w-[560px] mx-auto">

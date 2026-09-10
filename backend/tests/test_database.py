@@ -76,6 +76,33 @@ class DatabaseTest(unittest.TestCase):
         self.assertEqual(first["id"], updated["id"])
         self.assertEqual(database.list_user_receipts("web-receipts")[0]["status"], "paid")
 
+    def test_telegram_registration_and_website_link(self):
+        profile = database.register_telegram_user(
+            telegram_id="778899",
+            telegram_username="ivan_tomsk",
+            display_name="Иван Петров",
+            phone="+79991234567",
+            city="Томск",
+            street="Ленина",
+            house="15",
+            apartment="42",
+        )
+        self.assertEqual(profile["telegram_username"], "ivan_tomsk")
+        self.assertEqual(profile["apartment"], "42")
+        self.assertEqual(profile["registration_completed"], 1)
+
+        database.ensure_user("web-before-link", "web")
+        conversation = database.get_or_create_conversation("web-before-link", "web")
+        code = database.create_telegram_link_code(profile["id"])
+        linked = database.link_website_by_telegram_code("web-before-link", code)
+        self.assertEqual(linked["id"], profile["id"])
+        with database.connect() as conn:
+            owner = conn.execute(
+                "SELECT user_id FROM conversations WHERE id=?", (conversation["id"],)
+            ).fetchone()["user_id"]
+        self.assertEqual(owner, profile["id"])
+        self.assertIsNone(database.link_website_by_telegram_code("another-web-user", code))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -59,6 +59,24 @@ class ApiFlowTest(unittest.TestCase):
         self.assertEqual(receipt["status"], "unpaid")
         self.assertEqual(len(main.user_receipts("web-api-4", 24)), 1)
 
+    def test_telegram_registration_api_and_link(self):
+        result = main.telegram_register(main.TelegramRegistrationRequest(
+            telegram_id="445566",
+            telegram_username="resident",
+            display_name="Житель Томска",
+            phone="+79000000000",
+            city="Томск",
+            street="Советская",
+            house="8",
+            apartment="10",
+        ))
+        linked = main.link_telegram(main.TelegramLinkRequest(
+            web_user_id="web-api-link",
+            code=result["link_code"],
+        ))
+        self.assertEqual(linked["user"]["telegram_id"], "445566")
+        self.assertEqual(linked["user"]["street"], "Советская")
+
 
 if __name__ == "__main__":
     unittest.main()
