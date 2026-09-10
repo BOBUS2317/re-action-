@@ -1,90 +1,603 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
-import requests
-from config import QWEN_API_KEY, QWEN_API_URL
-from database import init_db, save_ticket
-from rag import search_rag
+from __future__ import annotations
 
-app = FastAPI(title="ЖКХ TechSupport AI", version="1.0")
+from typing import Literal
+
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+
+from config import CORS_ORIGINS, GIGACHAT_CREDENTIALS, GIGACHAT_MODEL
+from database import (
+    add_address,
+    add_meter_reading,
+    add_rating,
+    append_message,
+    create_ticket,
+    database_stats,
+    create_telegram_link_code,
+    ensure_user,
+    get_history,
+    get_or_create_conversation,
+    get_ticket,
+    get_telegram_profile,
+    get_user_organization,
+    get_user_profile,
+    init_db,
+    list_announcements,
+    list_categories,
+    list_organizations,
+    list_user_addresses,
+    list_user_readings,
+    list_user_receipts,
+    list_user_tickets,
+    link_website_by_telegram_code,
+    register_telegram_user,
+    search_knowledge,
+    set_conversation_category,
+    update_user_profile,
+    upsert_knowledge_article,
+    update_ticket_status,
+    upsert_receipt,
+)
+from rag import ask_gigachat, fallback_answer, retrieve
+from rag import ask_qwen  # noqa: F401 - alias для старых патчей/клиентов
+
+
+app = FastAPI(
+    title="Ре:Акция API",
+    description="Единый backend сайта и Telegram-бота: обращения, RAG и GigaChat.",
+    version="2.1.0",
+    docs_url="/api/docs",
+    openapi_url="/api/openapi.json",
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 init_db()
 
+EMERGENCY_RULES = [
+    (("запах газа", "пахнет газом", "утечка газа"),
+     "похоже на утечку газа. 1. не включай свет и не жги огонь. 2. выйди из квартиры, оставь дверь открытой. 3. с улицы звони 112 и 104. не возвращайся пока не разрешат"),
+    (("пожар", "горит", "дым", "огонь"),
+     "это может быть пожар. 1. покинь квартиру, закрой за собой дверь, не пользуйся лифтом. 2. звони 112 с безопасного места. 3. предупреди соседей. не туши сам если дым плотный"),
+    (("прорвало", "прорыв", "затопило", "топит", "льет", "течет"),
+     "похоже на прорыв. 1. перекрой воду в квартире если можешь безопасно. 2. отключи электричество в щитке если вода рядом с розетками. 3. звони 112 и в аварийку ук. убери документы и технику повыше"),
+    (("лифт",),
+     "если ты в кабине: 1. жми кнопку вызова диспетчера и держи. 2. звони 112, назови адрес, подъезд, что ты в кабине. 3. не раздвигай двери сам. если лифт просто сломан — не пользуйся, сообщи в ук"),
+]
+
+EMERGENCY_FALLBACK = "это может быть опасно. 1. покинь опасное место. 2. не включай электроприборы и не используй открытый огонь. 3. позвони 112. не устраняй сам"
+
+OPERATOR_HINTS = (
+    "оператор", "диспетчер", "человек", "соедини",
+    "позови", "живой", "поддержк", "специалист",
+)
+
+RECEIPT_HINTS = (
+    "квитанц", "задолжен", "долг", "оплат", "начислен",
+    "куда платить", "счет за", "счёт за", "платеж", "платёж",
+)
+
+METER_HINTS = (
+    "показан", "счётчик", "счетчик", "прибор уч",
+    "передать показания", "подать показания",
+)
+
+ORG_HINTS = (
+    "моя ук", "управляющ", "тсж", "жэк", "жск",
+    "кто обслуживает", "телефон ук", "аварийная служба", "диспетчерская",
+)
+
+OUTAGE_HINTS = (
+    "объявлен", "отключен", "отключ", "когда отключат", "планов",
+)
+
+RECEIPT_STATUS_NAMES = {
+    "unpaid": "не оплачена",
+    "paid": "оплачена",
+    "overdue": "просрочена",
+    "cancelled": "отменена",
+}
+
+
+def _receipts_answer(user_id: str) -> str | None:
+    receipts = list_user_receipts(user_id, 5)
+    if not receipts:
+        return (
+            "На этот профиль квитанций пока нет. "
+            "Если вы регистрировались в боте — привяжите Telegram на странице профиля, "
+            "и я подтяну ваши начисления сюда."
+        )
+    lines = []
+    debt = 0
+    for r in receipts:
+        amount = (r.get("amount_cents") or 0) / 100
+        st = r.get("status", "")
+        if st in ("unpaid", "overdue"):
+            debt += amount
+        st_name = RECEIPT_STATUS_NAMES.get(st, st)
+        lines.append(f"• {r.get('billing_period')} — {r.get('provider')}: {amount:,.2f} ₽ ({st_name})".replace(",", " "))
+    head = f"Ваши последние квитанции (долг: {debt:,.2f} ₽):".replace(",", " ")
+    return head + "\n" + "\n".join(lines)
+
+
+def _meters_answer(user_id: str) -> str | None:
+    readings = list_user_readings(user_id, 3)
+    if not readings:
+        return (
+            "Показаний на этот профиль пока нет. "
+            "Откройте раздел «Подать показания» на сайте или нажмите «Передать показания» в боте — "
+            "нужны адрес, ресурс и число на счётчике."
+        )
+    lines = []
+    for m in readings:
+        addr = f"{m.get('street', '')} {m.get('house', '')}".strip()
+        lines.append(f"• {m.get('resource')}: {m.get('value')} ({addr}, {m.get('measured_at', '')[:10]})")
+    return "Последние показания:\n" + "\n".join(lines) + "\n\nНовые можно подать в разделе «Подать показания»."
+
+
+def _org_answer(user_id: str) -> str | None:
+    data = get_user_organization(user_id)
+    mgmt = data.get("management") or {}
+    parts = []
+    if mgmt.get("name"):
+        contact = mgmt.get("phone") or "телефон не указан"
+        site = f", сайт: {mgmt.get('website')}" if mgmt.get("website") else ""
+        parts.append(f"Ваша управляющая компания: {mgmt.get('name')} — {contact}{site}.")
+    else:
+        parts.append("Управляющая компания за профилем не закреплена.")
+    em = data.get("emergency") or []
+    if em:
+        nums = ", ".join(f"{e.get('name')}: {e.get('phone')}" for e in em if e.get("phone"))
+        if nums:
+            parts.append(f"Аварийные номера: {nums}.")
+    parts.append("При запахе газа, дыме или угрозе жизни сначала звоните 112.")
+    return " ".join(parts)
+
+
+def _outages_answer(user_id: str) -> str | None:
+    profile = get_user_profile(user_id) or {}
+    city = profile.get("city") or "Томск"
+    items = list_announcements(city)[:3]
+    if not items:
+        return f"Активных объявлений по городу {city} сейчас нет. Если света/воды нет только у вас — опишите адрес, заведём заявку."
+    lines = [f"• {a.get('title', '')}: {(a.get('body') or '')[:220]}" for a in items]
+    return f"Что известно по городу {city}:\n" + "\n".join(lines)
+
+
+
 class SupportRequest(BaseModel):
-    user_id: str = Field(..., description="Уникальный идентификатор пользователя")
-    message: str = Field(..., description="Текст обращения пользователя в свободной форме")
+    user_id: str = Field(min_length=1, max_length=120)
+    message: str = Field(min_length=1, max_length=3000)
+    conversation_id: str | None = None
+    channel: Literal["web", "telegram"] = "web"
+    display_name: str | None = Field(default=None, max_length=120)
+
+
+class Source(BaseModel):
+    title: str
+    source_name: str
+    source_url: str | None
+    updated_at: str
+
 
 class SupportResponse(BaseModel):
+    conversation_id: str
     category: str
+    category_name: str
     response: str
+    confidence: float
     escalated: bool
-    ticket_id: int
+    ticket_id: str | None
+    llm_used: bool
+    sources: list[Source]
+
+
+class AddressRequest(BaseModel):
+    street: str = Field(min_length=1, max_length=180)
+    house: str = Field(min_length=1, max_length=30)
+    city: str = Field(default="Томск", max_length=80)
+    building: str | None = Field(default=None, max_length=30)
+    apartment: str | None = Field(default=None, max_length=30)
+    entrance: str | None = Field(default=None, max_length=30)
+    floor: str | None = Field(default=None, max_length=30)
+    is_primary: bool = True
+
+
+class ProfileUpdateRequest(BaseModel):
+    display_name: str | None = Field(default=None, max_length=120)
+    phone: str | None = Field(default=None, max_length=32)
+    city: str | None = Field(default=None, max_length=80)
+    street: str | None = Field(default=None, max_length=180)
+    house: str | None = Field(default=None, max_length=30)
+    apartment: str | None = Field(default=None, max_length=30)
+
+
+class TicketRequest(BaseModel):
+    user_id: str = Field(min_length=1, max_length=120)
+    conversation_id: str | None = None
+    category: str = "other"
+    title: str = Field(min_length=1, max_length=180)
+    description: str = Field(min_length=1, max_length=3000)
+    priority: Literal["low", "normal", "high", "emergency"] = "normal"
+    address_id: int | None = None
+    organization_id: int | None = None
+
+
+class TicketStatusRequest(BaseModel):
+    status: Literal["new", "accepted", "in_progress", "waiting", "resolved", "closed", "cancelled"]
+    actor: str = Field(default="operator", max_length=120)
+    note: str | None = Field(default=None, max_length=1000)
+
+
+class RatingRequest(BaseModel):
+    user_id: str
+    score: int = Field(ge=1, le=5)
+    conversation_id: str | None = None
+    ticket_id: str | None = None
+    comment: str | None = Field(default=None, max_length=1000)
+
+
+class MeterReadingRequest(BaseModel):
+    user_id: str
+    address_id: int
+    resource: Literal["cold_water", "hot_water", "electricity", "gas", "heating"]
+    value: float = Field(ge=0)
+    measured_at: str
+
+
+class ReceiptRequest(BaseModel):
+    user_id: str = Field(min_length=1, max_length=120)
+    billing_period: str = Field(pattern=r"^\d{4}-(0[1-9]|1[0-2])$")
+    provider: str = Field(min_length=1, max_length=180)
+    amount_cents: int = Field(ge=0)
+    status: Literal["unpaid", "paid", "overdue", "cancelled"] = "unpaid"
+    address_id: int | None = None
+    due_at: str | None = None
+    paid_at: str | None = None
+
+
+class TelegramRegistrationRequest(BaseModel):
+    telegram_id: str = Field(min_length=1, max_length=32)
+    telegram_username: str | None = Field(default=None, max_length=64)
+    display_name: str = Field(min_length=1, max_length=120)
+    phone: str = Field(min_length=7, max_length=32)
+    city: str = Field(min_length=1, max_length=80)
+    street: str = Field(min_length=1, max_length=180)
+    house: str = Field(min_length=1, max_length=30)
+    apartment: str | None = Field(default=None, max_length=30)
+
+
+class TelegramLinkRequest(BaseModel):
+    web_user_id: str = Field(min_length=1, max_length=120)
+    code: str = Field(pattern=r"^\d{6}$")
+
+
+class TelegramIdRequest(BaseModel):
+    telegram_id: str = Field(min_length=1, max_length=32)
+
+
+class KnowledgeArticleRequest(BaseModel):
+    category: str
+    slug: str = Field(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$", max_length=100)
+    title: str = Field(min_length=3, max_length=200)
+    body: str = Field(min_length=10, max_length=10000)
+    keywords: str = Field(default="", max_length=1000)
+    source_name: str = Field(min_length=2, max_length=200)
+    source_url: str | None = Field(default=None, max_length=1000)
+    is_emergency: bool = False
+    published_at: str | None = None
+
+
+@app.get("/api/health")
+def health():
+    configured = bool(GIGACHAT_CREDENTIALS)
+    return {
+        "status": "ok",
+        "database": database_stats(),
+        "gigachat_configured": configured,
+        "qwen_ready": configured,  # deprecated alias для старого мониторинга
+    }
+
+
+@app.get("/api/categories")
+def categories():
+    return list_categories()
+
+
+@app.post("/api/users/{user_id}/addresses", status_code=201)
+def create_address(user_id: str, req: AddressRequest):
+    ensure_user(user_id, "web")
+    return add_address(user_id=user_id, **req.model_dump())
+
+
+@app.get("/api/users/{user_id}/profile")
+def user_profile(user_id: str):
+    profile = get_user_profile(user_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    return profile
+
+
+@app.get("/api/users/{user_id}/addresses")
+def user_addresses(user_id: str):
+    return list_user_addresses(user_id)
+
+
+@app.put("/api/users/{user_id}/profile")
+def update_profile(user_id: str, req: ProfileUpdateRequest):
+    profile = update_user_profile(user_id, **req.model_dump(exclude_none=True))
+    if not profile:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    return profile
+
+
+@app.get("/api/organizations")
+def organizations():
+    return list_organizations()
+
+
+@app.get("/api/users/{user_id}/organization")
+def user_organization(user_id: str):
+    return get_user_organization(user_id)
+
+
+@app.get("/api/users/{user_id}/meter-readings")
+def user_meter_readings(user_id: str, limit: int = Query(default=20, ge=1, le=100)):
+    return list_user_readings(user_id, limit)
+
+
+@app.post("/api/telegram/register", status_code=201)
+def telegram_register(req: TelegramRegistrationRequest):
+    try:
+        profile = register_telegram_user(**req.model_dump())
+        code = create_telegram_link_code(profile["id"])
+        return {"user": profile, "link_code": code, "expires_in_minutes": 15}
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Не удалось сохранить регистрацию") from exc
+
+
+@app.post("/api/telegram/link-code")
+def telegram_link_code(req: TelegramIdRequest):
+    profile = get_telegram_profile(req.telegram_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Сначала пройдите регистрацию в Telegram")
+    return {"link_code": create_telegram_link_code(profile["id"]), "expires_in_minutes": 15}
+
+
+@app.get("/api/telegram/{telegram_id}/profile")
+def telegram_profile(telegram_id: str):
+    profile = get_telegram_profile(telegram_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Профиль не найден. Пройдите регистрацию в боте: /register")
+    return profile
+
+
+@app.post("/api/users/link-telegram")
+def link_telegram(req: TelegramLinkRequest):
+    profile = link_website_by_telegram_code(req.web_user_id, req.code)
+    if not profile:
+        raise HTTPException(status_code=400, detail="Код неверный или срок его действия истёк")
+    return {"user": profile}
+
 
 @app.post("/api/support", response_model=SupportResponse)
 def handle_support(req: SupportRequest):
-    context = search_rag(req.message)
+    ensure_user(req.user_id, req.channel, external_id=req.user_id, display_name=req.display_name)
+    conversation = get_or_create_conversation(req.user_id, req.channel, req.conversation_id)
+    previous_messages = get_history(conversation["id"])
+    append_message(conversation["id"], "user", req.message)
 
-    system_prompt = (
-        "Ты — профессиональный виртуальный помощник технической поддержки управляющей компании в сфере ЖКХ. "
-        "Твоя задача — помочь пользователю решить проблему быстро, опираясь ИСКЛЮЧИТЕЛЬНО на предоставленный контекст базы знаний.\n\n"
-        "СТРОГИЕ ПРАВИЛА:\n"
-        "1. Используй только факты и инструкции из раздела 'Контекст базы знаний'. Если ответа там нет, честно скажи об этом и предложи эскалацию.\n"
-        "2. Определи категорию обращения (например: Водоснабжение, Электрика, Отопление, Лифтовое хозяйство).\n"
-        "3. Если информации от пользователя недостаточно для решения, задай 1-2 конкретных уточняющих вопроса.\n"
-        "4. Если проблема аварийная (прорыв трубы, замыкание, пожар) или пользователь требует живого человека, "
-        "начни свой ответ с тега: [ТРЕБУЕТСЯ_ЭСКАЛАЦИЯ].\n\n"
-        f"Контекст базы знаний:\n{context}"
-    )
-    
-    payload = {
-        "model": "qwen/qwen-2.5-7b-instruct",
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": req.message}
-        ],
-        "temperature": 0.1  # Снижаем температуру до минимума, чтобы модель не фантазировала
-    }
-    
-    headers = {
-        "Authorization": f"Bearer {QWEN_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    try:
-        api_response = requests.post(QWEN_API_URL, json=payload, headers=headers, timeout=30)
-        res_data = api_response.json()
-        ai_text = res_data['choices'][0]['message']['content']
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка обращения к LLM API: {str(e)}")
-    
-    # 3. Обработка эскалации
-    escalated = False
-    if "[ТРЕБУЕТСЯ_ЭСКАЛАЦИЯ]" in ai_text:
-        escalated = True
-        ai_text = ai_text.replace("[ТРЕБУЕТСЯ_ЭСКАЛАЦИЯ]", "").strip()
-        status = "Эскалация оператору"
-    else:
-        status = "В работе / Решено"
-
-    # 4. Автоматическое определение категории
-    category = "Общие вопросы ЖКХ"
-    for cat in ["Водоснабжение", "Электрика", "Отопление", "Лифтовое хозяйство"]:
-        if cat.lower() in ai_text.lower() or cat.lower() in req.message.lower():
-            category = cat
+    context = retrieve(req.message)
+    first = context[0] if context else None
+    category = first["category"] if first else "other"
+    category_name = first["category_name"] if first else "Другое"
+    lowered = req.message.lower()
+    emergency_text = None
+    for terms, text in EMERGENCY_RULES:
+        if any(t in lowered for t in terms):
+            # для лифта требуем само слово лифт
+            if terms == ("лифт",) and "лифт" not in lowered:
+                continue
+            emergency_text = text
             break
 
-    # 5. Сохранение тикета в SQLite
-    ticket_id = save_ticket(
-        user_id=req.user_id,
-        message=req.message,
-        category=category,
-        ai_response=ai_text,
-        status=status,
-        escalated=escalated
+    emergency = emergency_text is not None
+    asks_operator = any(hint in lowered for hint in OPERATOR_HINTS)
+
+    # Личные данные — отвечаем из базы, а не из LLM: квитанции, показания, УК, объявления.
+    data_answer: str | None = None
+    data_category: str | None = None
+    data_category_name: str | None = None
+    if not emergency:
+        if any(h in lowered for h in RECEIPT_HINTS):
+            data_answer = _receipts_answer(req.user_id)
+            data_category, data_category_name = "billing", "Начисления и оплата"
+        elif any(h in lowered for h in METER_HINTS):
+            data_answer = _meters_answer(req.user_id)
+            data_category, data_category_name = "meters", "Приборы учёта"
+        elif any(h in lowered for h in ORG_HINTS):
+            data_answer = _org_answer(req.user_id)
+            data_category, data_category_name = "other", "Другое"
+        elif any(h in lowered for h in OUTAGE_HINTS):
+            data_answer = _outages_answer(req.user_id)
+            data_category, data_category_name = "other", "Другое"
+
+    if data_answer is not None:
+        response_text = data_answer
+        category = data_category or category
+        category_name = data_category_name or category_name
+        confidence = 1.0
+        llm_used = False
+    elif emergency:
+        response_text = emergency_text or EMERGENCY_FALLBACK
+        confidence = 1.0
+        llm_used = False
+    else:
+        try:
+            response_text = ask_gigachat(req.message, context, previous_messages)
+            if not response_text or not response_text.strip():
+                raise ValueError("empty LLM response")
+            response_text = response_text.strip()
+            llm_used = True
+            confidence = 0.85 if context else 0.55
+        except Exception:
+            response_text = fallback_answer(context)
+            llm_used = False
+            confidence = 0.7 if context else 0.3
+
+    if "[ТРЕБУЕТСЯ_ЭСКАЛАЦИЯ]" in response_text:
+        escalated = True
+        response_text = response_text.replace("[ТРЕБУЕТСЯ_ЭСКАЛАЦИЯ]", "").strip()
+    else:
+        escalated = emergency or asks_operator
+
+    state = "escalated" if escalated else ("resolved" if context else "clarifying")
+    set_conversation_category(conversation["id"], category, state)
+    append_message(
+        conversation["id"],
+        "assistant",
+        response_text,
+        model=GIGACHAT_MODEL if llm_used else "safety-or-rag-fallback",
+        confidence=confidence,
     )
 
+    ticket_id = None
+    if escalated:
+        priority = "emergency" if emergency else (first["default_priority"] if first else "normal")
+        ticket = create_ticket(
+            user_id=req.user_id,
+            conversation_id=conversation["id"],
+            category_slug=category,
+            title=first["title"] if first else "Обращение жителя",
+            description=req.message,
+            priority=priority,
+            organization_id=1 if emergency else 3,
+        )
+        ticket_id = ticket["id"]
+
+    sources = [
+        Source(
+            title=item["title"],
+            source_name=item["source_name"],
+            source_url=item["source_url"],
+            updated_at=item["updated_at"],
+        )
+        for item in context
+    ]
     return SupportResponse(
+        conversation_id=conversation["id"],
         category=category,
-        response=ai_text,
+        category_name=category_name,
+        response=response_text,
+        confidence=confidence,
         escalated=escalated,
-        ticket_id=ticket_id
+        ticket_id=ticket_id,
+        llm_used=llm_used,
+        sources=sources,
     )
+
+
+@app.post("/api/tickets", status_code=201)
+def create_ticket_endpoint(req: TicketRequest):
+    ensure_user(req.user_id, "web")
+    try:
+        return create_ticket(
+            user_id=req.user_id,
+            conversation_id=req.conversation_id,
+            category_slug=req.category,
+            title=req.title,
+            description=req.description,
+            priority=req.priority,
+            address_id=req.address_id,
+            organization_id=req.organization_id,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Не удалось создать заявку. Проверьте категорию и адрес.") from exc
+
+
+@app.get("/api/tickets/{ticket_id}")
+def ticket_details(ticket_id: str):
+    ticket = get_ticket(ticket_id)
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Заявка не найдена")
+    return ticket
+
+
+@app.get("/api/users/{user_id}/tickets")
+def user_tickets(user_id: str, limit: int = Query(default=50, ge=1, le=100)):
+    return list_user_tickets(user_id, limit)
+
+
+@app.get("/api/users/{user_id}/receipts")
+@app.get("/api/receipts/{user_id}")
+def user_receipts(user_id: str, limit: int = Query(default=24, ge=1, le=100)):
+    ensure_user(user_id, "web")
+    return list_user_receipts(user_id, limit)
+
+
+@app.post("/api/receipts", status_code=201)
+def save_receipt(req: ReceiptRequest):
+    ensure_user(req.user_id, "web")
+    try:
+        return upsert_receipt(**req.model_dump())
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Не удалось сохранить квитанцию") from exc
+
+
+@app.patch("/api/tickets/{ticket_id}/status")
+def change_ticket_status(ticket_id: str, req: TicketStatusRequest):
+    ticket = update_ticket_status(ticket_id, req.status, req.actor, req.note)
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Заявка не найдена")
+    return ticket
+
+
+@app.get("/api/announcements")
+def announcements(city: str = Query(default="Томск", max_length=80)):
+    return list_announcements(city)
+
+
+@app.get("/api/knowledge/search")
+def knowledge_search(q: str = Query(min_length=2, max_length=500), limit: int = Query(default=3, ge=1, le=10)):
+    return search_knowledge(q, limit)
+
+
+@app.post("/api/knowledge/articles", status_code=201)
+def save_knowledge_article(req: KnowledgeArticleRequest):
+    try:
+        return upsert_knowledge_article(
+            category_slug=req.category,
+            slug=req.slug,
+            title=req.title,
+            body=req.body,
+            keywords=req.keywords,
+            source_name=req.source_name,
+            source_url=req.source_url,
+            is_emergency=req.is_emergency,
+            published_at=req.published_at,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Неизвестная категория") from exc
+
+
+@app.post("/api/ratings", status_code=201)
+def create_rating(req: RatingRequest):
+    if not req.conversation_id and not req.ticket_id:
+        raise HTTPException(status_code=400, detail="Нужно указать conversation_id или ticket_id")
+    ensure_user(req.user_id, "web")
+    return {"id": add_rating(**req.model_dump()), "saved": True}
+
+
+@app.post("/api/meter-readings", status_code=201)
+def create_meter_reading(req: MeterReadingRequest):
+    ensure_user(req.user_id, "web")
+    try:
+        return add_meter_reading(**req.model_dump())
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Не удалось сохранить показания") from exc
