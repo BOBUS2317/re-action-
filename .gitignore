@@ -10,3 +10,7 @@ __pycache__/
 backend/.venv/
 /.cache/
 /.integration-backup/
+.idea/
+*.iml
+.vscode/
+.DS_Store
