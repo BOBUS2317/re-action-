@@ -55,23 +55,19 @@ app.add_middleware(
 
 init_db()
 
-EMERGENCY_TERMS = (
-    "запах газа",
-    "пахнет газом",
-    "утечка газа",
-    "пожар",
-    "дым",
-    "искрит",
-    "человек застрял",
-    "люди застряли",
-    "прорвало трубу",
-)
-EMERGENCY_RESPONSE = (
-    "Это может быть опасно. 1. Покиньте опасное место. "
-    "2. Не включайте и не выключайте электроприборы и не используйте открытый огонь. "
-    "3. Позвоните 112; при запахе газа — также 104, находясь снаружи. "
-    "Не пытайтесь устранять аварию самостоятельно."
-)
+EMERGENCY_RULES = [
+    (("запах газа", "пахнет газом", "утечка газа"),
+     "похоже на утечку газа. 1. не включай свет и не жги огонь. 2. выйди из квартиры, оставь дверь открытой. 3. с улицы звони 112 и 104. не возвращайся пока не разрешат"),
+    (("пожар", "горит", "дым", "огонь"),
+     "это может быть пожар. 1. покинь квартиру, закрой за собой дверь, не пользуйся лифтом. 2. звони 112 с безопасного места. 3. предупреди соседей. не туши сам если дым плотный"),
+    (("прорвало", "прорыв", "затопило", "топит", "льет", "течет"),
+     "похоже на прорыв. 1. перекрой воду в квартире если можешь безопасно. 2. отключи электричество в щитке если вода рядом с розетками. 3. звони 112 и в аварийку ук. убери документы и технику повыше"),
+    (("лифт",),
+     "если ты в кабине: 1. жми кнопку вызова диспетчера и держи. 2. звони 112, назови адрес, подъезд, что ты в кабине. 3. не раздвигай двери сам. если лифт просто сломан — не пользуйся, сообщи в ук"),
+]
+
+EMERGENCY_FALLBACK = "это может быть опасно. 1. покинь опасное место. 2. не включай электроприборы и не используй открытый огонь. 3. позвони 112. не устраняй сам"
+
 
 
 class SupportRequest(BaseModel):
@@ -256,29 +252,22 @@ def handle_support(req: SupportRequest):
     category = first["category"] if first else "other"
     category_name = first["category_name"] if first else "Другое"
     lowered = req.message.lower()
-    lift_stuck = "лифт" in lowered and any(w in lowered for w in ("застрял", "застряла", "застряли", "встал", "остановился", "не открывается", "заклинило", "не выходит"))
-    emergency = any(term in lowered for term in EMERGENCY_TERMS) or lift_stuck
+    emergency_text = None
+    for terms, text in EMERGENCY_RULES:
+        if any(t in lowered for t in terms):
+            # для лифта требуем само слово лифт
+            if terms == ("лифт",) and "лифт" not in lowered:
+                continue
+            emergency_text = text
+            break
 
-    asks_operator = any(term in lowered for term in ("оператор", "диспетчер", "живой человек", "создай заявку"))
-    llm_used = False
+    emergency = emergency_text is not None
 
     if emergency:
-        response_text = EMERGENCY_RESPONSE
+        response_text = emergency_text or EMERGENCY_FALLBACK
         confidence = 1.0
         llm_used = False
-    elif not context:
-        response_text = fallback_answer(context)
-        confidence = 0.35
-        llm_used = False
-    else:
-        try:
-            response_text = ask_qwen(req.message, context, previous_messages)
-            confidence = 0.9
-            llm_used = True
-        except (requests.RequestException, KeyError, IndexError, TypeError):
-            response_text = fallback_answer(context)
-            confidence = 0.5
-            llm_used = False
+
 
 
 
