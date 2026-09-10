@@ -22,28 +22,10 @@ interface HistoryEntry {
 
 const QUICK_REPLIES = [
   "Куда платить за воду",
-  "Подать показания",
-  "Аварийная служба",
-  "Мои квитанции",
+  "Передать показания счётчиков",
+  "Аварийная ситуация",
+  "Проверить квитанции",
 ];
-
-const BOT_SCRIPT: Record<string, string> = {
-  "Куда платить за воду":
-    "Оплату за холодное и горячее водоснабжение принимает АО «Водоканал». Оплатить можно:\n• На сайте vodokanal.spb.ru\n• В приложении банка\n• В МФЦ\n\nРеквизиты:\n• ИНН 7830001915\n• Счёт 40702810200001234567",
-  "Когда отключат свет":
-    "По адресу ул. Ленина, 15 запланированы отключения:\n\n⚡ **12 сентября**, 09:00–13:00 — плановое\n💧 **14 сентября**, 10:00–14:00 — плановое\n🔥 **15 сентября** — аварийное отопление\n\nПолный график — в разделе «Отключения».",
-  "Подать показания":
-    "Передайте показания до 25-го числа каждого месяца:\n1. Холодная вода (ХВС)\n2. Горячая вода (ГВС)\n\nПоследние показания:\n• ХВС — 1842 м³ (09.09.2026)\n• ГВС — 931 м³ (09.09.2026)",
-  "Аварийная служба":
-    "Аварийная служба работает 24/7:\n\n💧 Вода: **+7 812 555-01-99**\n⚡ Свет: **+7 812 555-01-98**\n🔥 Газ: **04**\n\nОпишите ситуацию — я передам в вашу УК.",
-  "Мои квитанции":
-    "Найдены квитанции по адресу ул. Ленина, 15:\n\n• **Сентябрь 2026** — 4 512 ₽ (не оплачено)\n• Август 2026 — 4 318 ₽ ✓ оплачено\n• Июль 2026 — 4 205 ₽ ✓ оплачено",
-  "Моя УК":
-    "Ваша управляющая компания — **ООО «Уют»**.\n\nКонтакты:\n• Телефон: +7 812 555-01-02\n• Сайт: uyut-spb.ru\n• Режим работы: пн–пт, 9:00–18:00",
-};
-
-const FALLBACK =
-  "Понял вас! Сейчас уточню информацию по вашему запросу. Если вопрос срочный — позвоните в вашу УК ООО «Уют»: +7 812 555-01-02.";
 
 function formatTime(date: Date) {
   return date.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
@@ -63,16 +45,11 @@ function OperatorAvatar() {
   return (
     <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center shrink-0">
       <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="w-4.5 h-4.5">
-        {/* Голова */}
         <circle cx="12" cy="9" r="3.2" />
-        {/* Плечи */}
         <path d="M4.5 20c0-3.6 3.4-6 7.5-6s7.5 2.4 7.5 6" />
-        {/* Наушники — дужка */}
         <path d="M6 9.5V8a6 6 0 0112 0v1.5" />
-        {/* Наушники — амбушюры */}
         <rect x="4.5" y="8.5" width="2.5" height="3.5" rx="1" fill="white" />
         <rect x="17" y="8.5" width="2.5" height="3.5" rx="1" fill="white" />
-        {/* Микрофон */}
         <path d="M18.5 12v2a3 3 0 01-3 3h-1.5" />
         <circle cx="13.5" cy="17" r="0.6" fill="white" />
       </svg>
@@ -124,7 +101,7 @@ const INITIAL_MESSAGES: Message[] = [
   {
     id: 1,
     role: "bot",
-    text: "Здравствуйте! Я виртуальный помощник ЖКХ-сервиса. Помогу разобраться с оплатой, показаниями счётчиков, плановыми отключениями и многим другим.\n\nЧем могу помочь?",
+    text: "Здравствуйте! Я виртуальный помощник ЖКХ-сервиса. Помогу разобраться с оплатой, показаниями счётчиков, плановыми отключениями и обращениями в УК.\n\nЧем могу помочь?",
     time: formatTime(new Date()),
   },
 ];
@@ -224,24 +201,28 @@ export default function Chat() {
     }
   }
 
-  function sendMessage(text: string) {
+  async function sendMessage(text: string) {
     if (!text.trim()) return;
+    const trimmed = text.trim();
+
+    // Добавляем сообщение пользователя
     const now = new Date();
     const userMsg: Message = {
       id: Date.now(),
       role: "user",
-      text: text.trim(),
+      text: trimmed,
       time: formatTime(now),
     };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
 
-    if (text.trim().length >= 3 && !currentTicketId) {
-      const id = saveToHistory(text.trim());
+    // Сохраняем обращение в историю при первом сообщении
+    if (trimmed.length >= 3 && !currentTicketId) {
+      const id = saveToHistory(trimmed);
       if (id) {
         setCurrentTicketId(id);
         setTicketStatus("amber");
-        setTicketTitle(text.trim());
+        setTicketTitle(trimmed);
         setTicketDate(
           now.toLocaleDateString("ru-RU", {
             day: "2-digit",
@@ -254,14 +235,49 @@ export default function Chat() {
 
     setTyping(true);
 
-    setTimeout(() => {
-      const reply = BOT_SCRIPT[text.trim()] ?? FALLBACK;
-      setTyping(false);
+    try {
+      const r = await fetch("/api/support", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: localStorage.getItem("web_user_id") || "web-anon",
+          message: trimmed,
+          channel: "web",
+        }),
+      });
+
+      if (!r.ok) {
+        throw new Error(`HTTP ${r.status}`);
+      }
+
+      const data = await r.json();
+      const replyText =
+        typeof data?.response === "string"
+          ? data.response
+          : "Не удалось получить ответ. Попробуйте переформулировать вопрос.";
+
       setMessages((prev) => [
         ...prev,
-        { id: Date.now() + 1, role: "bot", text: reply, time: formatTime(new Date()) },
+        {
+          id: Date.now() + 1,
+          role: "bot",
+          text: replyText,
+          time: formatTime(new Date()),
+        },
       ]);
-    }, 900 + Math.random() * 600);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          role: "bot",
+          text: "Сервис временно недоступен. Попробуйте позже или обратитесь в аварийную службу по единому номеру 112.",
+          time: formatTime(new Date()),
+        },
+      ]);
+    } finally {
+      setTyping(false);
+    }
   }
 
   function handleCloseTicket() {
@@ -320,7 +336,7 @@ export default function Chat() {
         {
           id: Date.now() + 10,
           role: "bot",
-          text: `Понял вас! Перевожу на оператора… ⏳`,
+          text: "Понял вас! Перевожу на оператора… ⏳",
           time: formatTime(new Date()),
         },
       ]);
@@ -333,7 +349,7 @@ export default function Chat() {
           {
             id: Date.now() + 11,
             role: "operator",
-            text: `Здравствуйте! Я **Алексей**, диспетчер ООО «Уют». Вижу ваше обращение **${currentTicketId}**.\n\nЧто случилось? Опишите ситуацию подробнее — постараюсь помочь.`,
+            text: `Здравствуйте! Я **Алексей**, оператор поддержки. Вижу ваше обращение **${currentTicketId}**.\n\nОпишите ситуацию подробнее — постараюсь помочь.`,
             time: formatTime(new Date()),
           },
         ]);
@@ -483,7 +499,6 @@ export default function Chat() {
             {[
               { label: "ID обращения", value: currentTicketId || "—", mono: true },
               { label: "Тема", value: ticketTitle || "—" },
-              { label: "Адрес", value: "ул. Ленина, 15" },
               { label: "Дата создания", value: ticketDate || "—" },
             ].map((f) => (
               <div key={f.label}>
@@ -558,13 +573,13 @@ export default function Chat() {
                       <rect x="17" y="8.5" width="2.5" height="3.5" rx="1" fill="white" />
                     </svg>
                   ) : (
-                    "АК"
+                    "П"
                   )}
                 </div>
                 <div>
-                  <p className="text-[13px] font-semibold text-[#0F172A]">Алексей К.</p>
+                  <p className="text-[13px] font-semibold text-[#0F172A]">Алексей</p>
                   <p className="text-[11px] text-[#94A3B8]">
-                    {ticketStatus === "green" ? "Оператор • онлайн" : "Диспетчер ООО «Уют»"}
+                    {ticketStatus === "green" ? "Оператор • онлайн" : "Поддержка"}
                   </p>
                 </div>
               </div>
