@@ -256,7 +256,10 @@ def handle_support(req: SupportRequest):
     category = first["category"] if first else "other"
     category_name = first["category_name"] if first else "Другое"
     lowered = req.message.lower()
-    emergency = any(term in lowered for term in EMERGENCY_TERMS)
+    lowered = req.message.lower()
+    lift_stuck = "лифт" in lowered and any(w in lowered for w in ("застрял", "застряла", "застряли", "встал", "остановился", "не открывается", "заклинило", "не выходит"))
+    emergency = any(term in lowered for term in EMERGENCY_TERMS) or lift_stuck
+
     asks_operator = any(term in lowered for term in ("оператор", "диспетчер", "живой человек", "создай заявку"))
     llm_used = False
 
