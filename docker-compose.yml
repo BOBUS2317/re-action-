@@ -26,6 +26,8 @@ services:
       dockerfile: backend.Dockerfile
     ports:
       - "127.0.0.1:8000:8000"
+    env_file:
+      - .env
     environment:
       DB_NAME: /data/support.db
       QWEN_API_URL: http://qwen:8080/v1/chat/completions
