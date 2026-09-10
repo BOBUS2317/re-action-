@@ -475,7 +475,6 @@ async def prompt_problem(message: types.Message):
 async def support(message: types.Message):
     if not message.from_user or not message.text:
         return
-    # FSM-шаги уже разобраны выше, сюда попадает только свободный текст.
     waiting = await message.answer("ищу ответ в базе знаний…")
     payload = {
         "user_id": f"telegram-{message.from_user.id}",
@@ -489,23 +488,36 @@ async def support(message: types.Message):
             response = await client.post(f"{BACKEND_URL}/api/support", json=payload)
             response.raise_for_status()
         result = response.json()
-    except httpx.HTTPError:
+    except (httpx.HTTPError, ValueError):
         await waiting.edit_text(
             "сервис временно недоступен. попробуй позже, а при аварии звони 112"
         )
         return
-    conversations[message.from_user.id] = result["conversation_id"]
-    last_support[message.from_user.id] = {
-        "conversation_id": result["conversation_id"],
-        "ticket_id": result.get("ticket_id"),
-    }
-    text = result["response"]
-    if result.get("ticket_id"):
-        text += f"\n\nзаявка {result['ticket_id']} создана, диспетчер её видит"
+
+    conv_id = result.get("conversation_id")
+    if conv_id:
+        conversations[message.from_user.id] = conv_id
+
+    text = (result.get("response") or "не смог ответить, попробуй переформулировать").strip()
+    ticket_id = result.get("ticket_id")
+    try:
+        confidence = float(result.get("confidence") or 0)
+    except (TypeError, ValueError):
+        confidence = 0
+
+    if ticket_id:
+        text += f"\n\nзаявка {ticket_id} создана, диспетчер её видит"
     elif result.get("escalated"):
         text += "\n\nпередала диспетчеру, он разберётся"
-    await waiting.edit_text(text, reply_markup=rate_kb())
 
+    if ticket_id or confidence >= 0.6:
+        last_support[message.from_user.id] = {
+            "conversation_id": conv_id,
+            "ticket_id": ticket_id,
+        }
+        await waiting.edit_text(text[:4000], reply_markup=rate_kb())
+    else:
+        await waiting.edit_text(text[:4000])
 
 async def main():
     if not TOKEN:
