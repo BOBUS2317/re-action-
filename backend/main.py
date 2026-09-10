@@ -256,7 +256,6 @@ def handle_support(req: SupportRequest):
     category = first["category"] if first else "other"
     category_name = first["category_name"] if first else "Другое"
     lowered = req.message.lower()
-    lowered = req.message.lower()
     lift_stuck = "лифт" in lowered and any(w in lowered for w in ("застрял", "застряла", "застряли", "встал", "остановился", "не открывается", "заклинило", "не выходит"))
     emergency = any(term in lowered for term in EMERGENCY_TERMS) or lift_stuck
 
@@ -265,7 +264,8 @@ def handle_support(req: SupportRequest):
 
     if emergency:
         response_text = EMERGENCY_RESPONSE
-        ...
+        confidence = 1.0
+        llm_used = False
     elif not context:
         response_text = fallback_answer(context)
         confidence = 0.35
@@ -273,9 +273,13 @@ def handle_support(req: SupportRequest):
     else:
         try:
             response_text = ask_qwen(req.message, context, previous_messages)
+            confidence = 0.9
             llm_used = True
         except (requests.RequestException, KeyError, IndexError, TypeError):
             response_text = fallback_answer(context)
+            confidence = 0.5
+            llm_used = False
+
 
 
     if "[ТРЕБУЕТСЯ_ЭСКАЛАЦИЯ]" in response_text:
