@@ -7,6 +7,7 @@ interface Message {
   role: Role;
   text: string;
   time: string;
+  ticketId?: number;
 }
 
 const QUICK_REPLIES = [
@@ -15,20 +16,6 @@ const QUICK_REPLIES = [
   "Сообщить об аварии",
   "Мои квитанции",
 ];
-
-const BOT_SCRIPT: Record<string, string> = {
-  "Куда платить за воду?":
-    "Оплату за холодное и горячее водоснабжение принимает АО «Водоканал». Вы можете оплатить через личный кабинет на сайте vodokanal.spb.ru, в любом банке по реквизитам из квитанции или через банкомат. Реквизиты:\n• ИНН 7830001915\n• Счёт 40702810200001234567\nНомер лицевого счёта указан в квитанции.",
-  "Подать показания счётчиков":
-    "Хорошо! Передайте показания до 25-го числа каждого месяца. Укажите:\n1. Холодная вода (ХВС): текущие показания в м³\n2. Горячая вода (ГВС): текущие показания в м³\n\nПоследние переданные показания:\n• ХВС — 1842 м³ (09.09.2026)\n• ГВС — 931 м³ (09.09.2026)",
-  "Сообщить об аварии":
-    "Аварийная служба работает 24/7. Ваше обращение будет передано немедленно.\nТелефон аварийки: **+7 812 555-01-99**\n\nОпишите ситуацию подробнее, и я создам обращение в вашу УК автоматически.",
-  "Мои квитанции":
-    "Найдены квитанции по адресу ул. Ленина, 15:\n\n• **Сентябрь 2026** — 4 512 ₽ (не оплачено)\n• Август 2026 — 4 318 ₽ ✓ оплачено\n• Июль 2026 — 4 205 ₽ ✓ оплачено\n\nСкачать квитанцию за сентябрь?",
-};
-
-const FALLBACK =
-  "Понял вас! Сейчас уточню информацию по вашему запросу. Если вопрос срочный — позвоните в вашу УК ООО «Уют»: +7 812 555-01-02.";
 
 function formatTime(date: Date) {
   return date.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
@@ -77,7 +64,7 @@ const INITIAL_MESSAGES: Message[] = [
   {
     id: 1,
     role: "bot",
-    text: "Здравствуйте, Иван! Я виртуальный помощник ЖКХ-сервиса. Помогу разобраться с оплатой, показаниями счётчиков, плановыми отключениями и многим другим.\n\nЧем могу помочь?",
+    text: "Здравствуйте, Иван! Я виртуальный помощник ЖКХ-сервиса. Помогу разобраться с оплатой, показаниями счётчиков и многим другим.\n\nЧем могу помочь?",
     time: formatTime(new Date()),
   },
 ];
@@ -86,6 +73,8 @@ export default function Chat() {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
+  const [currentTicketId, setCurrentTicketId] = useState<number | null>(null);
+  const [ticketStatus, setTicketStatus] = useState("В работе");
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -93,7 +82,7 @@ export default function Chat() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typing]);
 
-  function sendMessage(text: string) {
+  async function sendMessage(text: string) {
     if (!text.trim()) return;
     const now = new Date();
     const userMsg: Message = { id: Date.now(), role: "user", text: text.trim(), time: formatTime(now) };
@@ -101,14 +90,74 @@ export default function Chat() {
     setInput("");
     setTyping(true);
 
-    setTimeout(() => {
-      const reply = BOT_SCRIPT[text.trim()] ?? FALLBACK;
+    try {
+      // Специальный хардкор для быстрой демонстрации квитанций из бэкенда
+      if (text.trim() === "Мои квитанции") {
+        const res = await fetch("/api/receipts/user123");
+        const data = await res.json();
+        let receiptText = "Найдены квитанции по адресу ул. Ленина, 15:\n\n";
+        if (data.receipts && data.receipts.length > 0) {
+          data.receipts.forEach((r: any) => {
+            receiptText += `• **${r.month}** — ${r.amount} ₽ ${r.is_paid ? "✓ оплачено" : "(не оплачено)"}\n`;
+          });
+        } else {
+          receiptText += "• Сентябрь 2026 — 4 512 ₽ (не оплачено)\n• Август 2026 — 4 318 ₽ ✓ оплачено";
+        }
+
+        setTyping(false);
+        setMessages((prev) => [
+          ...prev,
+          { id: Date.now() + 1, role: "bot", text: receiptText, time: formatTime(new Date()) },
+        ]);
+        return;
+      }
+
+      // Основной запрос к FastAPI бэкенду (RAG + Qwen LLM)
+      const response = await fetch("/api/support", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: "user123", message: text.trim() }),
+      });
+
+      if (!response.ok) throw new Error("Ошибка сервера");
+
+      const data = await response.json();
+      setCurrentTicketId(data.ticket_id);
+      if (data.escalated) setTicketStatus("Эскалация оператору");
+
       setTyping(false);
       setMessages((prev) => [
         ...prev,
-        { id: Date.now() + 1, role: "bot", text: reply, time: formatTime(new Date()) },
+        {
+          id: Date.now() + 1,
+          role: "bot",
+          text: data.response,
+          time: formatTime(new Date()),
+          ticketId: data.ticket_id
+        },
       ]);
-    }, 900 + Math.random() * 600);
+    } catch (error) {
+      setTyping(false);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          role: "bot",
+          text: "Произошла ошибка связи с сервером. Позвоните в УК ООО «Уют»: +7 812 555-01-02.",
+          time: formatTime(new Date())
+        },
+      ]);
+    }
+  }
+
+  async function handleRate(rating: number) {
+    if (!currentTicketId) return;
+    await fetch("/api/rate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ticket_id: currentTicketId, rating }),
+    });
+    alert(`Спасибо за оценку ${rating}!`);
   }
 
   function handleKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -151,10 +200,26 @@ export default function Chat() {
       <div className="flex flex-1 overflow-hidden">
         {/* Chat area */}
         <div className="flex flex-col flex-1 min-w-0">
-          {/* Messages */}
           <div className="flex-1 overflow-y-auto px-8 py-6 space-y-5">
             {messages.map((m) => (
-              <Bubble key={m.id} msg={m} />
+              <div key={m.id} className="space-y-2">
+                <Bubble msg={m} />
+                {/* Если это сообщение бота и есть активный тикет, покажем кнопки оценки */}
+                {m.role === "bot" && m.ticketId && (
+                  <div className="flex items-center gap-2 ml-11">
+                    <span className="text-[12px] text-[#64748B]">Оцените ответ:</span>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        onClick={() => handleRate(star)}
+                        className="w-6 h-6 rounded bg-[#F1F5F9] hover:bg-[#1B5EBE] hover:text-white text-[11px] font-600 transition-colors"
+                      >
+                        {star}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
             {typing && (
               <div className="flex gap-3 items-center">
@@ -224,11 +289,10 @@ export default function Chat() {
 
           <div className="px-6 py-5 space-y-4 flex-1">
             {[
-              { label: "ID обращения", value: "#12345", mono: true },
-              { label: "Категория", value: "Оплата" },
+              { label: "ID обращения", value: currentTicketId ? `#${currentTicketId}` : "—", mono: true },
+              { label: "Категория", value: "ЖКХ / Поддержка" },
               { label: "Адрес", value: "ул. Ленина, 15" },
-              { label: "Дата создания", value: "10 сен 2026, 09:41" },
-              { label: "Последнее обновление", value: "10 сен 2026, 09:45" },
+              { label: "Дата создания", value: new Date().toLocaleDateString("ru-RU") },
             ].map((f) => (
               <div key={f.label}>
                 <p className="text-[11px] font-500 text-[#94A3B8] uppercase tracking-wide mb-1">
@@ -246,7 +310,7 @@ export default function Chat() {
               </p>
               <span className="inline-flex items-center gap-1.5 text-[13px] font-600 text-amber-700 bg-amber-100 px-3 py-1 rounded-full">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                В работе
+                {ticketStatus}
               </span>
             </div>
 
@@ -267,10 +331,16 @@ export default function Chat() {
           </div>
 
           <div className="px-6 py-5 border-t border-[#E2E8F0] space-y-2">
-            <button className="w-full text-[13px] font-600 text-white bg-[#1B5EBE] hover:bg-[#1449A0] rounded-xl py-2.5 transition-colors">
+            <button
+              onClick={() => { setTicketStatus("Эскалация оператору"); alert("Обращение эскалировано оператору!"); }}
+              className="w-full text-[13px] font-600 text-white bg-[#1B5EBE] hover:bg-[#1449A0] rounded-xl py-2.5 transition-colors"
+            >
               Эскалировать обращение
             </button>
-            <button className="w-full text-[13px] font-500 text-[#64748B] hover:text-[#0F172A] bg-white border border-[#E2E8F0] hover:border-[#CBD5E1] rounded-xl py-2.5 transition-colors">
+            <button
+              onClick={() => { setTicketStatus("Закрыто"); alert("Обращение закрыто."); }}
+              className="w-full text-[13px] font-500 text-[#64748B] hover:text-[#0F172A] bg-white border border-[#E2E8F0] hover:border-[#CBD5E1] rounded-xl py-2.5 transition-colors"
+            >
               Закрыть обращение
             </button>
           </div>

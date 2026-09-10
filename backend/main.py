@@ -93,6 +93,11 @@ def handle_support(req: SupportRequest):
         confidence=confidence
     )
 
+@app.get("/api/receipts/{user_id}")
+def get_receipts(user_id: str):
+    """Получение квитанций пользователя"""
+    receipts = get_user_receipts(user_id)
+    return {"user_id": user_id, "receipts": receipts}
 
 @app.get("/api/tickets/{user_id}")
 def get_history(user_id: str):
