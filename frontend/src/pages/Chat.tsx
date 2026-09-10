@@ -27,6 +27,14 @@ const QUICK_REPLIES = [
   "Мои квитанции",
 ];
 
+// Вспомогательная функция для форматирования времени
+function formatTime(date: Date): string {
+  return date.toLocaleTimeString("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function BotAvatar() {
   return (
     <div className="w-8 h-8 rounded-full bg-[#1B5EBE] flex items-center justify-center shrink-0">
@@ -41,16 +49,11 @@ function OperatorAvatar() {
   return (
     <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center shrink-0">
       <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="w-4.5 h-4.5">
-        {/* Голова */}
         <circle cx="12" cy="9" r="3.2" />
-        {/* Плечи */}
         <path d="M4.5 20c0-3.6 3.4-6 7.5-6s7.5 2.4 7.5 6" />
-        {/* Наушники — дужка */}
         <path d="M6 9.5V8a6 6 0 0112 0v1.5" />
-        {/* Наушники — амбушюры */}
         <rect x="4.5" y="8.5" width="2.5" height="3.5" rx="1" fill="white" />
         <rect x="17" y="8.5" width="2.5" height="3.5" rx="1" fill="white" />
-        {/* Микрофон */}
         <path d="M18.5 12v2a3 3 0 01-3 3h-1.5" />
         <circle cx="13.5" cy="17" r="0.6" fill="white" />
       </svg>
@@ -119,8 +122,8 @@ export default function Chat() {
   const [typing, setTyping] = useState(false);
   const [currentTicketId, setCurrentTicketId] = useState<string | null>(null);
   const [ticketStatus, setTicketStatus] = useState<"amber" | "green" | "slate">("amber");
-  const [ticketTitle, setTicketTitle] = useState<string>("");
-  const [ticketDate, setTicketDate] = useState<string>("");
+  const [ticketTitle] = useState<string>("");
+  const [ticketDate] = useState<string>("");
   const [ticketRating, setTicketRating] = useState<number | undefined>(undefined);
 
   const [showRatingModal, setShowRatingModal] = useState(false);
@@ -161,34 +164,6 @@ export default function Chat() {
     window.history.replaceState({}, "");
   }, [location.state]);
 
-  function saveToHistory(text: string): string {
-    try {
-      const raw = JSON.parse(localStorage.getItem("history") || "[]");
-      const list: HistoryEntry[] = Array.isArray(raw) ? raw : [];
-      const now = new Date();
-      const dateStr = now.toLocaleDateString("ru-RU", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      });
-      const id = `ЖКХ-${now.getFullYear()}-${String(
-        Math.floor(Math.random() * 9000) + 1000
-      )}`;
-      const entry: HistoryEntry = {
-        id,
-        title: text,
-        date: dateStr,
-        status: "В работе",
-        statusColor: "amber",
-      };
-      const next = [entry, ...list].slice(0, 20);
-      localStorage.setItem("history", JSON.stringify(next));
-      return id;
-    } catch {
-      return "";
-    }
-  }
-
   function updateTicket(id: string, patch: Partial<HistoryEntry>) {
     try {
       const raw = JSON.parse(localStorage.getItem("history") || "[]");
@@ -202,49 +177,56 @@ export default function Chat() {
     }
   }
 
-async function sendMessage(text: string) {
-  if (!text.trim()) return;
-  const now = new Date();
-  const userMsg: Message = {
-    id: Date.now(),
-    role: "user",
-    text: text.trim(),
-    time: formatTime(now),
-  };
-  setMessages((prev) => [...prev, userMsg]);
-  setInput("");
-  setTyping(true);
-
-  try {
-    let webId = localStorage.getItem("web_user_id");
-    if (!webId) {
-      webId = `web-${crypto.randomUUID()}`;
-      localStorage.setItem("web_user_id", webId);
+  async function sendMessage(text: string) {
+    if (!text.trim()) return;
+    const now = new Date();
+    const userMsg: Message = {
+      id: Date.now(),
+      role: "user",
+      text: text.trim(),
+      time: formatTime(now),
+    };
+    
+    // Если тикет еще не создан, создаем базовый ID при первом сообщении
+    if (!currentTicketId) {
+      const newId = `ЖКХ-${now.getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
+      setCurrentTicketId(newId);
     }
-    const r = await fetch("/api/support", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: webId,
-        message: text.trim(),
-        channel: "web"
-      })
-    });
-    const data = await r.json();
-    setMessages((prev) => [...prev, {
-      id: Date.now() + 1, role: "bot",
-      text: data.response, time: formatTime(new Date())
-    }]);
-  } catch {
-    setMessages((prev) => [...prev, {
-      id: Date.now() + 1, role: "bot",
-      text: "сервис временно недоступен. при аварии звоните 112",
-      time: formatTime(new Date())
-    }]);
-  } finally {
-    setTyping(false);
+
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
+    setTyping(true);
+
+    try {
+      let webId = localStorage.getItem("web_user_id");
+      if (!webId) {
+        webId = `web-${crypto.randomUUID()}`;
+        localStorage.setItem("web_user_id", webId);
+      }
+      const r = await fetch("/api/support", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: webId,
+          message: text.trim(),
+          channel: "web"
+        })
+      });
+      const data = await r.json();
+      setMessages((prev) => [...prev, {
+        id: Date.now() + 1, role: "bot",
+        text: data.response, time: formatTime(new Date())
+      }]);
+    } catch {
+      setMessages((prev) => [...prev, {
+        id: Date.now() + 1, role: "bot",
+        text: "Сервис временно недоступен. При аварии звоните 112",
+        time: formatTime(new Date())
+      }]);
+    } finally {
+      setTyping(false);
+    }
   }
-}
 
   function handleCloseTicket() {
     if (!currentTicketId) {
