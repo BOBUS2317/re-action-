@@ -126,6 +126,24 @@ class TicketForm(StatesGroup):
     description = State()
 
 
+class RegForm(StatesGroup):
+    phone = State()
+    city = State()
+    street = State()
+    house = State()
+    apartment = State()
+
+
+def phone_kb() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="\U0001F4F1 отправить номер", request_contact=True)],
+            [KeyboardButton(text="\u274C отмена")],
+        ],
+        resize_keyboard=True,
+    )
+
+
 async def api_get(path: str, params: dict | None = None):
     async with httpx.AsyncClient(timeout=20) as client:
         r = await client.get(f"{BACKEND_URL}{path}", params=params)
@@ -147,8 +165,169 @@ async def start(message: types.Message, state: FSMContext):
         "привет! я помощник «ре:акция» — вода, свет, лифт, квитанции, заявки\n\n"
         "просто напиши что случилось своими словами, например:\n"
         "«нет горячей воды» или «застрял в лифте»\n\n"
-        "если пахнет газом, дым или кого-то зажало — сразу звони 112, а потом пиши сюда",
+        "если пахнет газом, дым или кого-то зажало — сразу звони 112, а потом пиши сюда\n\n"
+        "чтобы сайт и бот знали тебя как одного человека:\n"
+        "1. отправь /register и ответь на 5 вопросов (телефон, город, улица, дом, квартира)\n"
+        "2. бот выдаст 6-значный код на 15 минут\n"
+        "3. введи код на сайте в Профиле или на странице /login\n\n"
+        "новый код в любой момент — команда /link",
         reply_markup=main_kb(),
+    )
+
+
+@dp.message(Command("register"))
+async def register_start(message: types.Message, state: FSMContext):
+    await state.clear()
+    await state.set_state(RegForm.phone)
+    await message.answer(
+        "давай привяжем тебя: нужен телефон, город, улица, дом и квартира.\n\n"
+        "пришли номер телефона текстом или кнопкой ниже",
+        reply_markup=phone_kb(),
+    )
+
+
+@dp.message(Command("link"))
+async def link_cmd(message: types.Message):
+    if not message.from_user:
+        return
+    tid = str(message.from_user.id)
+    try:
+        data = await api_post("/api/telegram/link-code", {"telegram_id": tid})
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            await message.answer(
+                "ты ещё не зарегистрирован. отправь /register — займёт минуту",
+                reply_markup=main_kb(),
+            )
+            return
+        await message.answer("не смог выдать код, попробуй позже")
+        return
+    except httpx.HTTPError:
+        await message.answer("сервис недоступен, попробуй позже")
+        return
+    code = data.get("link_code", "")
+    await message.answer(
+        f"твой код для сайта: {code}\n"
+        "действует 15 минут. введи его на сайте в Профиле или на странице /login",
+        reply_markup=main_kb(),
+    )
+
+
+@dp.message(Command("profile"))
+async def profile_cmd(message: types.Message):
+    if not message.from_user:
+        return
+    tid = str(message.from_user.id)
+    try:
+        prof = await api_get(f"/api/telegram/{tid}/profile")
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            await message.answer("профиль не найден. отправь /register")
+            return
+        await message.answer("не смог открыть профиль, попробуй позже")
+        return
+    except httpx.HTTPError:
+        await message.answer("сервис недоступен, попробуй позже")
+        return
+    await message.answer(
+        f"ты: {prof.get('display_name', '')} ({prof.get('telegram_username') or 'без ника'})\n"
+        f"адрес: {prof.get('city', '')}, {prof.get('street', '')} {prof.get('house', '')}, кв. {prof.get('apartment') or '—'}\n"
+        f"телефон: {prof.get('phone', '')}\n\n"
+        "новый код для сайта — команда /link",
+        reply_markup=main_kb(),
+    )
+
+
+@dp.message(RegForm.phone)
+async def reg_phone(message: types.Message, state: FSMContext):
+    phone = ""
+    if message.contact and message.contact.phone_number:
+        phone = message.contact.phone_number.strip()
+    elif message.text:
+        phone = message.text.strip()
+    digits = "".join(ch for ch in phone if ch.isdigit())
+    if len(digits) < 7:
+        await message.answer(
+            "номер слишком короткий. пришли телефон текстом, например +7 913 123-45-67",
+            reply_markup=phone_kb(),
+        )
+        return
+    await state.update_data(phone=phone)
+    await state.set_state(RegForm.city)
+    await message.answer("понял. какой город? (например Томск)", reply_markup=cancel_kb())
+
+
+@dp.message(RegForm.city)
+async def reg_city(message: types.Message, state: FSMContext):
+    city = (message.text or "").strip()
+    if len(city) < 2:
+        await message.answer("напиши город полностью, например Томск")
+        return
+    await state.update_data(city=city)
+    await state.set_state(RegForm.street)
+    await message.answer("какая улица? (например ул. Ленина)")
+
+
+@dp.message(RegForm.street)
+async def reg_street(message: types.Message, state: FSMContext):
+    street = (message.text or "").strip()
+    if len(street) < 2:
+        await message.answer("напиши улицу полностью")
+        return
+    await state.update_data(street=street)
+    await state.set_state(RegForm.house)
+    await message.answer("номер дома?")
+
+
+@dp.message(RegForm.house)
+async def reg_house(message: types.Message, state: FSMContext):
+    house = (message.text or "").strip()
+    if not house:
+        await message.answer("напиши номер дома")
+        return
+    await state.update_data(house=house)
+    await state.set_state(RegForm.apartment)
+    await message.answer("номер квартиры? если частный дом — отправь «-»")
+
+
+@dp.message(RegForm.apartment)
+async def reg_apartment(message: types.Message, state: FSMContext):
+    raw = (message.text or "").strip()
+    apartment = None if raw in ("-", "—", "нет", "частный") else (raw or None)
+    data = await state.get_data()
+    if not message.from_user:
+        await state.clear()
+        return
+    payload = {
+        "telegram_id": str(message.from_user.id),
+        "telegram_username": message.from_user.username,
+        "display_name": message.from_user.full_name,
+        "phone": data.get("phone", ""),
+        "city": data.get("city", ""),
+        "street": data.get("street", ""),
+        "house": data.get("house", ""),
+        "apartment": apartment,
+    }
+    await state.clear()
+    waiting = await message.answer("сохраняю…", reply_markup=main_kb())
+    try:
+        result = await api_post("/api/telegram/register", payload)
+    except httpx.HTTPStatusError as e:
+        try:
+            detail = e.response.json()
+        except ValueError:
+            detail = e.response.text
+        await waiting.edit_text(f"не получилось сохранить: {detail}. попробуй /register ещё раз")
+        return
+    except httpx.HTTPError:
+        await waiting.edit_text("сервис недоступен, попробуй позже")
+        return
+    code = result.get("link_code", "")
+    await waiting.edit_text(
+        "готово! я тебя запомнил.\n\n"
+        f"твой код для сайта: {code}\n"
+        "действует 15 минут — введи его на сайте в Профиле или на странице /login.\n"
+        "после этого сайт и бот будут знать тебя как одного человека с общей историей.",
     )
 
 
@@ -523,6 +702,17 @@ async def main():
     if not TOKEN:
         raise RuntimeError("укажи BOT_TOKEN в .env")
     bot = Bot(token=TOKEN)
+    try:
+        await bot.set_my_commands([
+            types.BotCommand(command="start", description="начать"),
+            types.BotCommand(command="register", description="регистрация и код для сайта"),
+            types.BotCommand(command="link", description="новый код для входа на сайт"),
+            types.BotCommand(command="profile", description="мой профиль"),
+            types.BotCommand(command="new", description="новый диалог"),
+            types.BotCommand(command="cancel", description="отмена"),
+        ])
+    except Exception:
+        pass
     await dp.start_polling(bot)
 
 

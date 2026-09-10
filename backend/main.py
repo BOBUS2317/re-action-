@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from config import CORS_ORIGINS, QWEN_API_URL
+from config import CORS_ORIGINS, QWEN_API_URL, QWEN_MODEL
 from database import (
     add_address,
     add_meter_reading,
@@ -67,6 +67,11 @@ EMERGENCY_RULES = [
 ]
 
 EMERGENCY_FALLBACK = "это может быть опасно. 1. покинь опасное место. 2. не включай электроприборы и не используй открытый огонь. 3. позвони 112. не устраняй сам"
+
+OPERATOR_HINTS = (
+    "оператор", "диспетчер", "человек", "соедини",
+    "позови", "живой", "поддержк", "специалист",
+)
 
 
 
@@ -262,14 +267,24 @@ def handle_support(req: SupportRequest):
             break
 
     emergency = emergency_text is not None
+    asks_operator = any(hint in lowered for hint in OPERATOR_HINTS)
 
     if emergency:
         response_text = emergency_text or EMERGENCY_FALLBACK
         confidence = 1.0
         llm_used = False
-
-
-
+    else:
+        try:
+            response_text = ask_qwen(req.message, context, previous_messages)
+            if not response_text or not response_text.strip():
+                raise ValueError("empty LLM response")
+            response_text = response_text.strip()
+            llm_used = True
+            confidence = 0.85 if context else 0.55
+        except Exception:
+            response_text = fallback_answer(context)
+            llm_used = False
+            confidence = 0.7 if context else 0.3
 
     if "[ТРЕБУЕТСЯ_ЭСКАЛАЦИЯ]" in response_text:
         escalated = True
@@ -283,7 +298,7 @@ def handle_support(req: SupportRequest):
         conversation["id"],
         "assistant",
         response_text,
-        model="Qwen2.5-1.5B-Instruct" if llm_used else "safety-or-rag-fallback",
+        model=QWEN_MODEL if llm_used else "safety-or-rag-fallback",
         confidence=confidence,
     )
 
