@@ -16,19 +16,7 @@ const QUICK_REPLIES = [
   "Мои квитанции",
 ];
 
-const BOT_SCRIPT: Record<string, string> = {
-  "Куда платить за воду?":
-    "Оплату за холодное и горячее водоснабжение принимает АО «Водоканал». Вы можете оплатить через личный кабинет на сайте vodokanal.spb.ru, в любом банке по реквизитам из квитанции или через банкомат. Реквизиты:\n• ИНН 7830001915\n• Счёт 40702810200001234567\nНомер лицевого счёта указан в квитанции.",
-  "Подать показания счётчиков":
-    "Хорошо! Передайте показания до 25-го числа каждого месяца. Укажите:\n1. Холодная вода (ХВС): текущие показания в м³\n2. Горячая вода (ГВС): текущие показания в м³\n\nПоследние переданные показания:\n• ХВС — 1842 м³ (09.09.2026)\n• ГВС — 931 м³ (09.09.2026)",
-  "Сообщить об аварии":
-    "Аварийная служба работает 24/7. Ваше обращение будет передано немедленно.\nТелефон аварийки: **+7 812 555-01-99**\n\nОпишите ситуацию подробнее, и я создам обращение в вашу УК автоматически.",
-  "Мои квитанции":
-    "Найдены квитанции по адресу ул. Ленина, 15:\n\n• **Сентябрь 2026** — 4 512 ₽ (не оплачено)\n• Август 2026 — 4 318 ₽ ✓ оплачено\n• Июль 2026 — 4 205 ₽ ✓ оплачено\n\nСкачать квитанцию за сентябрь?",
-};
-
-const FALLBACK =
-  "Понял вас! Сейчас уточню информацию по вашему запросу. Если вопрос срочный — позвоните в вашу УК ООО «Уют»: +7 812 555-01-02.";
+const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 function formatTime(date: Date) {
   return date.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
@@ -56,12 +44,9 @@ function Bubble({ msg }: { msg: Message }) {
               ? "bg-[#F1F5F9] text-[#0F172A] rounded-tl-sm"
               : "bg-[#1B5EBE] text-white rounded-tr-sm"
           }`}
-          dangerouslySetInnerHTML={{
-            __html: msg.text
-              .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-              .replace(/\n/g, "<br/>"),
-          }}
-        />
+        >
+          {msg.text}
+        </div>
         <p className="text-[11px] text-[#94A3B8] mt-1 px-1">{msg.time}</p>
       </div>
       {!isBot && (
@@ -86,6 +71,9 @@ export default function Chat() {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const userId = useRef(`web-${crypto.randomUUID()}`);
+  const nextMessageId = useRef(2);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -93,22 +81,48 @@ export default function Chat() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typing]);
 
-  function sendMessage(text: string) {
+  async function sendMessage(text: string) {
     if (!text.trim()) return;
     const now = new Date();
-    const userMsg: Message = { id: Date.now(), role: "user", text: text.trim(), time: formatTime(now) };
+    const userMsg: Message = { id: nextMessageId.current++, role: "user", text: text.trim(), time: formatTime(now) };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setTyping(true);
 
-    setTimeout(() => {
-      const reply = BOT_SCRIPT[text.trim()] ?? FALLBACK;
-      setTyping(false);
+    try {
+      const response = await fetch(`${API_URL}/api/support`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: userId.current,
+          message: text.trim(),
+          conversation_id: conversationId,
+          channel: "web",
+          display_name: "Иван",
+        }),
+      });
+      if (!response.ok) throw new Error(`API error ${response.status}`);
+      const result = await response.json();
+      setConversationId(result.conversation_id);
+      const ticket = result.ticket_id ? `\n\nЗаявка: ${result.ticket_id}` : "";
+      const reply = `${result.response}\n\nКатегория: ${result.category_name}${ticket}`;
       setMessages((prev) => [
         ...prev,
-        { id: Date.now() + 1, role: "bot", text: reply, time: formatTime(new Date()) },
+        { id: nextMessageId.current++, role: "bot", text: reply, time: formatTime(new Date()) },
       ]);
-    }, 900 + Math.random() * 600);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: nextMessageId.current++,
+          role: "bot",
+          text: "Не удалось связаться с сервисом. Попробуйте ещё раз. При аварии звоните 112.",
+          time: formatTime(new Date()),
+        },
+      ]);
+    } finally {
+      setTyping(false);
+    }
   }
 
   function handleKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {

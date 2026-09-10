@@ -1,1 +1,11 @@
 bot/.env
+/.env
+backend/.env
+backend/data/
+*.db
+*.db-shm
+*.db-wal
+__pycache__/
+*.pyc
+backend/.venv/
+/.cache/
