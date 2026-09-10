@@ -363,7 +363,7 @@ export default function Chat() {
           {
             id: Date.now() + 11,
             role: "operator",
-            text: `Здравствуйте! Я **Алексей**, оператор поддержки. Вижу ваше обращение **${currentTicketId}**.\n\nОпишите ситуацию подробнее — постараюсь помочь.`,
+            text: `Здравствуйте! Я **Михаил Литвин**, оператор поддержки. Вижу ваше обращение **${currentTicketId}**.\n\nОпишите ситуацию подробнее — постараюсь помочь.`,
             time: formatTime(new Date()),
           },
         ]);
@@ -591,7 +591,7 @@ export default function Chat() {
                   )}
                 </div>
                 <div>
-                  <p className="text-[13px] font-semibold text-[#0F172A]">Алексей</p>
+                  <p className="text-[13px] font-semibold text-[#0F172A]">Михаил Литвин</p>
                   <p className="text-[11px] text-[#94A3B8]">
                     {ticketStatus === "green" ? "Оператор • онлайн" : "Поддержка"}
                   </p>
