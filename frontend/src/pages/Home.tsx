@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { getEffectiveUserId } from "../lib/user";
 
 const TILES = [
-  { id: 1, icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7"><path d="M12 2C8 2 4 5.5 4 9.5c0 5.25 8 12.5 8 12.5s8-7.25 8-12.5C20 5.5 16 2 12 2z"/><circle cx="12" cy="9.5" r="2.5"/></svg>), label: "Куда платить за воду", color: "blue", badge: null },
-  { id: 2, icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>), label: "Когда отключат свет", color: "amber", badge: "Есть отключения" },
-  { id: 3, icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>), label: "Подать показания", color: "teal", badge: null },
-  { id: 4, icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7"><path d="M22 16.92V21a2 2 0 01-2.18 2A19.79 19.79 0 013 5.18 2 2 0 015 3h4.09a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L9.91 11a16 16 0 006.09 6.09l1.36-1.36a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>), label: "Аварийная служба", color: "red", badge: "112" },
-  { id: 5, icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>), label: "Мои квитанции", color: "blue", badge: "3 новых" },
-  { id: 6, icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>), label: "Моя УК", color: "violet", badge: null },
+  { id: 1, icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7"><path d="M12 2C8 2 4 5.5 4 9.5c0 5.25 8 12.5 8 12.5s8-7.25 8-12.5C20 5.5 16 2 12 2z"/><circle cx="12" cy="9.5" r="2.5"/></svg>), label: "Куда платить за воду", color: "blue", badge: null, route: null as string | null, chat: "покажи мои квитанции" },
+  { id: 2, icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>), label: "Когда отключат свет", color: "amber", badge: "Есть отключения", route: null, chat: "когда отключат свет" },
+  { id: 3, icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>), label: "Подать показания", color: "teal", badge: null, route: "/meters", chat: null },
+  { id: 4, icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7"><path d="M22 16.92V21a2 2 0 01-2.18 2A19.79 19.79 0 013 5.18 2 2 0 015 3h4.09a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L9.91 11a16 16 0 006.09 6.09l1.36-1.36a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>), label: "Аварийная служба", color: "red", badge: "112", route: "/company", chat: null },
+  { id: 5, icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>), label: "Мои квитанции", color: "blue", badge: "3 новых", route: "/receipts", chat: null },
+  { id: 6, icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>), label: "Моя УК", color: "violet", badge: null, route: "/company", chat: null },
 ];
 
 interface Appeal {
@@ -33,10 +34,27 @@ const appealStatusMap: Record<string, string> = {
   slate: "bg-slate-100 text-slate-500",
 };
 
+const RESOURCE_SHORT: Record<string, string> = {
+  cold_water: "ХВС",
+  hot_water: "ГВС",
+  electricity: "Свет",
+  gas: "Газ",
+  heating: "Тепло",
+};
+
 export default function Home() {
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const [history, setHistory] = useState<Appeal[]>([]);
+  const [address, setAddress] = useState<string | null>(null);
+  const [debt, setDebt] = useState<string>("—");
+  const [debtSub, setDebtSub] = useState("Загружаю…");
+  const [nextPay, setNextPay] = useState("—");
+  const [nextPaySub, setNextPaySub] = useState("Загружаю…");
+  const [metersLine, setMetersLine] = useState("—");
+  const [metersSub, setMetersSub] = useState("Загружаю…");
+  const [ukName, setUkName] = useState("—");
+  const [ukPhone, setUkPhone] = useState("Загружаю…");
   const navigate = useNavigate();
 
   const isAuth = localStorage.getItem("auth") === "true";
@@ -49,26 +67,15 @@ export default function Home() {
     }
   })();
 
-  const profile = (() => {
-    try {
-      return JSON.parse(localStorage.getItem("profile") || "{}");
-    } catch {
-      return {};
-    }
-  })();
-
+  const firstName = tgUser.first_name || tgUser.display_name?.split(" ")?.[0];
   const initials =
-    (tgUser.first_name?.[0] || "И") + (tgUser.last_name?.[0] || "П");
-  const displayName = tgUser.first_name
-    ? `${tgUser.first_name} ${tgUser.last_name || ""}`.trim()
+    ((firstName?.[0] || tgUser.display_name?.[0] || "И") as string) +
+    ((tgUser.last_name?.[0] || tgUser.display_name?.split(" ")?.[1]?.[0] || "П") as string);
+  const displayName = firstName
+    ? `${firstName} ${tgUser.last_name || tgUser.display_name?.split(" ")?.slice(1)?.join(" ") || ""}`.trim()
     : "Пользователь";
 
-  const address: string | null =
-    profile.street && profile.house
-      ? `${profile.street}, ${profile.house}${
-          profile.apartment ? `, кв. ${profile.apartment}` : ""
-        }`
-      : null;
+  const uid = getEffectiveUserId();
 
   useEffect(() => {
     try {
@@ -77,10 +84,90 @@ export default function Home() {
     } catch {
       setHistory([]);
     }
+    let alive = true;
+    (async () => {
+      // Адрес — из базы (туда его кладёт бот при /register), кэш — запасной вариант
+      try {
+        const r = await fetch(`/api/users/${encodeURIComponent(uid)}/profile`);
+        if (r.ok) {
+          const p = await r.json();
+          if (p?.street && p?.house && alive) {
+            setAddress(`${p.street}, ${p.house}${p.apartment ? `, кв. ${p.apartment}` : ""}`);
+            localStorage.setItem("profile", JSON.stringify({
+              city: p.city || "", street: p.street || "", house: p.house || "",
+              apartment: p.apartment || "", phone: p.phone || "",
+            }));
+          }
+        }
+      } catch { /* ignore */ }
+      if (!alive) return;
+      // Квитанции → задолженность и следующий платёж
+      try {
+        const r = await fetch(`/api/users/${encodeURIComponent(uid)}/receipts?limit=12`);
+        if (r.ok && alive) {
+          const list = await r.json();
+          if (Array.isArray(list) && list.length) {
+            const due = list.filter((x: { status: string }) => x.status === "unpaid" || x.status === "overdue");
+            const sum = due.reduce((s: number, x: { amount_cents: number }) => s + (x.amount_cents || 0) / 100, 0);
+            setDebt(`${sum.toFixed(2)} ₽`);
+            setDebtSub(due.length ? `К оплате: ${due.length}` : "Нет долгов");
+            const first = due[0] || list[0];
+            setNextPay(`${((first.amount_cents || 0) / 100).toFixed(2)} ₽`);
+            setNextPaySub(first.billing_period || first.provider || "");
+          } else {
+            setDebt("0 ₽"); setDebtSub("Нет начислений");
+            setNextPay("—"); setNextPaySub("Квитанций пока нет");
+          }
+        }
+      } catch { if (alive) { setDebt("—"); setDebtSub("Нет связи"); } }
+      // Показания
+      try {
+        const r = await fetch(`/api/users/${encodeURIComponent(uid)}/meter-readings?limit=4`);
+        if (r.ok && alive) {
+          const list = await r.json();
+          if (Array.isArray(list) && list.length) {
+            const top = list.slice(0, 2).map((m: { resource: string; value: number }) => `${RESOURCE_SHORT[m.resource] || m.resource} ${m.value}`).join(" · ");
+            setMetersLine(top || "Есть показания");
+            setMetersSub(`${list.length} показаний подано`);
+          } else {
+            setMetersLine("Нет показаний"); setMetersSub("Нажмите «Подать показания»");
+          }
+        }
+      } catch { if (alive) { setMetersLine("—"); setMetersSub("Нет связи"); } }
+      // УК
+      try {
+        const r = await fetch(`/api/users/${encodeURIComponent(uid)}/organization`);
+        if (r.ok && alive) {
+          const d = await r.json();
+          if (d?.management?.name) {
+            setUkName(d.management.name.length > 18 ? d.management.name.slice(0, 18) + "…" : d.management.name);
+            setUkPhone(d.management.phone || "телефон не указан");
+          } else {
+            setUkName("Не закреплена"); setUkPhone("укажите адрес в профиле");
+          }
+        }
+      } catch { if (alive) { setUkName("—"); setUkPhone("Нет связи"); } }
+    })();
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Кэш адреса, если сервер пока молчит
+  useEffect(() => {
+    if (address) return;
+    try {
+      const p = JSON.parse(localStorage.getItem("profile") || "{}");
+      if (p.street && p.house) setAddress(`${p.street}, ${p.house}${p.apartment ? `, кв. ${p.apartment}` : ""}`);
+    } catch { /* ignore */ }
+  }, [address]);
 
   function goToChat(message?: string) {
     navigate("/chat", { state: message ? { initialMessage: message } : undefined });
+  }
+
+  function handleTile(tile: (typeof TILES)[number]) {
+    if (tile.route) navigate(tile.route);
+    else goToChat(tile.chat || tile.label);
   }
 
   const recent = history.slice(0, 3);
@@ -145,7 +232,7 @@ export default function Home() {
         <div className="max-w-[720px] mx-auto text-center">
           <p className="text-[13px] font-medium text-[#1B5EBE] tracking-wide uppercase mb-3">Добро пожаловать</p>
           <h1 className="text-[36px] font-extrabold tracking-tight text-[#0F172A] mb-2">
-            Здравствуйте{isAuth && tgUser.first_name ? `, ${tgUser.first_name}` : ""}!
+            Здравствуйте{isAuth && firstName ? `, ${firstName}` : ""}!
           </h1>
           <p className="text-[18px] text-[#64748B] mb-8">Чем могу помочь сегодня?</p>
 
@@ -197,7 +284,7 @@ export default function Home() {
               return (
                 <button
                   key={tile.id}
-                  onClick={() => goToChat(tile.label)}
+                  onClick={() => handleTile(tile)}
                   className={`relative flex flex-col items-start gap-4 p-6 rounded-2xl ${c.bg} transition-all duration-200 group text-left cursor-pointer`}
                 >
                   {tile.badge && (
@@ -225,16 +312,16 @@ export default function Home() {
 
         <section className="grid grid-cols-4 gap-4 mb-12">
           {[
-            { label: "Задолженность", value: "0 ₽", sub: "Нет долгов", color: "text-emerald-600" },
-            { label: "Следующий платёж", value: "4 512 ₽", sub: "до 25 сентября", color: "text-[#1B5EBE]" },
-            { label: "Показания счётчиков", value: "ХВС 1842 м³", sub: "ГВС 931 м³", color: "text-[#64748B]" },
-            { label: "УК на связи", value: "ООО «Уют»", sub: "+7 812 555-01-02", color: "text-[#64748B]" },
+            { label: "Задолженность", value: debt, sub: debtSub, color: "text-emerald-600", route: "/receipts" },
+            { label: "Следующий платёж", value: nextPay, sub: nextPaySub, color: "text-[#1B5EBE]", route: "/receipts" },
+            { label: "Показания счётчиков", value: metersLine, sub: metersSub, color: "text-[#64748B]", route: "/meters" },
+            { label: "УК на связи", value: ukName, sub: ukPhone, color: "text-[#64748B]", route: "/company" },
           ].map((s, i) => (
-            <div key={i} className="bg-[#F8FAFC] rounded-xl px-5 py-4 border border-[#E2E8F0]">
+            <button key={i} onClick={() => navigate(s.route)} className="bg-[#F8FAFC] rounded-xl px-5 py-4 border border-[#E2E8F0] text-left hover:border-[#93C5FD] transition-colors">
               <p className="text-[12px] text-[#94A3B8] font-medium mb-1">{s.label}</p>
               <p className={`text-[16px] font-bold ${s.color} mb-0.5`}>{s.value}</p>
               <p className="text-[12px] text-[#64748B]">{s.sub}</p>
-            </div>
+            </button>
           ))}
         </section>
 

@@ -232,6 +232,22 @@ def link_website_by_telegram_code(web_user_id: str, code: str) -> dict[str, Any]
                 conn.execute("UPDATE conversations SET user_id=? WHERE user_id=?", (telegram_user_id, web_user_id))
                 conn.execute("UPDATE tickets SET user_id=? WHERE user_id=?", (telegram_user_id, web_user_id))
                 conn.execute("UPDATE ratings SET user_id=? WHERE user_id=?", (telegram_user_id, web_user_id))
+                conn.execute("UPDATE receipts SET user_id=? WHERE user_id=?", (telegram_user_id, web_user_id))
+                conn.execute("UPDATE meter_readings SET user_id=? WHERE user_id=?", (telegram_user_id, web_user_id))
+                # Адреса сайта переезжают к telegram-профилю; чужие primary не затираем
+                has_primary = conn.execute(
+                    "SELECT id FROM addresses WHERE user_id=? AND is_primary=1", (telegram_user_id,)
+                ).fetchone()
+                if has_primary:
+                    conn.execute(
+                        "UPDATE addresses SET user_id=?, is_primary=0 WHERE user_id=?",
+                        (telegram_user_id, web_user_id),
+                    )
+                else:
+                    conn.execute(
+                        "UPDATE addresses SET user_id=? WHERE user_id=?",
+                        (telegram_user_id, web_user_id),
+                    )
         conn.execute("UPDATE telegram_link_codes SET used_at=? WHERE code=?", (now, code))
     return get_user_profile(telegram_user_id)
 
@@ -581,6 +597,123 @@ def list_user_receipts(user_id: str, limit: int = 24) -> list[dict[str, Any]]:
             (user_id, limit),
         ).fetchall()
     return [dict(row) for row in rows]
+
+
+def list_user_addresses(user_id: str) -> list[dict[str, Any]]:
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT * FROM addresses WHERE user_id=? ORDER BY is_primary DESC, id DESC",
+            (user_id,),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def list_organizations() -> list[dict[str, Any]]:
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT * FROM organizations WHERE is_active=1 ORDER BY id"
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def get_user_organization(user_id: str) -> dict[str, Any]:
+    with connect() as conn:
+        last_org = conn.execute(
+            """
+            SELECT o.* FROM tickets t
+            JOIN organizations o ON o.id=t.organization_id
+            WHERE t.user_id=? AND t.organization_id IS NOT NULL
+            ORDER BY t.created_at DESC LIMIT 1
+            """,
+            (user_id,),
+        ).fetchone()
+        management = None
+        if last_org:
+            management = dict(last_org)
+        else:
+            row = conn.execute(
+                "SELECT * FROM organizations WHERE kind='management_company' AND is_active=1 ORDER BY id LIMIT 1"
+            ).fetchone()
+            management = dict(row) if row else None
+        emergency = [
+            dict(r) for r in conn.execute(
+                "SELECT * FROM organizations WHERE kind='emergency' AND is_active=1 ORDER BY id"
+            ).fetchall()
+        ]
+    return {"management": management, "emergency": emergency}
+
+
+def list_user_readings(user_id: str, limit: int = 20) -> list[dict[str, Any]]:
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT m.*, a.city, a.street, a.house, a.apartment
+            FROM meter_readings m
+            LEFT JOIN addresses a ON a.id=m.address_id
+            WHERE m.user_id=?
+            ORDER BY m.measured_at DESC, m.id DESC
+            LIMIT ?
+            """,
+            (user_id, limit),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def update_user_profile(
+    user_id: str,
+    display_name: str | None = None,
+    phone: str | None = None,
+    city: str | None = None,
+    street: str | None = None,
+    house: str | None = None,
+    apartment: str | None = None,
+) -> dict[str, Any] | None:
+    now = utc_now()
+    with connect() as conn:
+        exists = conn.execute("SELECT id, channel FROM users WHERE id=?", (user_id,)).fetchone()
+        if not exists:
+            conn.execute(
+                "INSERT INTO users(id, channel, external_id, display_name, phone, created_at, updated_at)"
+                " VALUES (?, 'web', ?, ?, ?, ?, ?)",
+                (user_id, user_id, display_name, phone, now, now),
+            )
+        else:
+            conn.execute(
+                """
+                UPDATE users SET
+                  display_name=COALESCE(?, display_name),
+                  phone=COALESCE(?, phone),
+                  updated_at=?
+                WHERE id=?
+                """,
+                (display_name, phone, now, user_id),
+            )
+        if street is not None or house is not None or city is not None or apartment is not None:
+            cur = conn.execute(
+                "SELECT * FROM addresses WHERE user_id=? AND is_primary=1", (user_id,)
+            ).fetchone()
+            if cur:
+                conn.execute(
+                    """
+                    UPDATE addresses SET
+                      city=COALESCE(?, city),
+                      street=COALESCE(?, street),
+                      house=COALESCE(?, house),
+                      apartment=COALESCE(?, apartment)
+                    WHERE id=?
+                    """,
+                    (city, street, house, apartment, cur["id"]),
+                )
+            else:
+                if street and house:
+                    conn.execute(
+                        """
+                        INSERT INTO addresses(user_id, city, street, house, apartment, is_primary)
+                        VALUES (?, ?, ?, ?, ?, 1)
+                        """,
+                        (user_id, city or "Томск", street, house, apartment),
+                    )
+    return get_user_profile(user_id)
 
 
 def add_meter_reading(

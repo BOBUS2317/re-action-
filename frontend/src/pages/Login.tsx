@@ -48,9 +48,29 @@ export default function Login() {
         return;
       }
 
-      // Сохраняем данные пользователя, если бэк их вернул
+      // Сохраняем данные пользователя, если бэк их вернул.
+      // Бэк возвращает { id: "telegram-xxx", display_name, telegram_username, city, street, ... }
       if (data?.user) {
-        localStorage.setItem("tg_user", JSON.stringify(data.user));
+        const u = data.user;
+        const prev = (() => { try { return JSON.parse(localStorage.getItem("tg_user") || "{}"); } catch { return {}; } })();
+        localStorage.setItem("tg_user", JSON.stringify({
+          ...prev,
+          id: u.id || prev.id,
+          display_name: u.display_name || prev.display_name,
+          first_name: prev.first_name || u.display_name?.split(" ")?.[0],
+          last_name: prev.last_name || u.display_name?.split(" ")?.slice(1)?.join(" "),
+          username: u.telegram_username || prev.username,
+          telegram_username: u.telegram_username || prev.telegram_username,
+        }));
+        if (u.city || u.street || u.phone) {
+          localStorage.setItem("profile", JSON.stringify({
+            city: u.city || "",
+            street: u.street || "",
+            house: u.house || "",
+            apartment: u.apartment || "",
+            phone: u.phone || "",
+          }));
+        }
       }
       localStorage.setItem("auth", "true");
       localStorage.setItem("tg_linked", "true");

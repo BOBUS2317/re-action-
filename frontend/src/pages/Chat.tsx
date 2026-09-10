@@ -32,6 +32,13 @@ function formatTime(date: Date) {
 }
 
 function getWebUserId(): string {
+  // После привязки Telegram — единый id telegram-xxx, иначе web-xxx
+  try {
+    if (localStorage.getItem("tg_linked") === "true") {
+      const u = JSON.parse(localStorage.getItem("tg_user") || "{}");
+      if (u.id) return u.id;
+    }
+  } catch { /* ignore */ }
   let id = localStorage.getItem("web_user_id");
   if (!id) {
     id = `web-${crypto.randomUUID()}`;

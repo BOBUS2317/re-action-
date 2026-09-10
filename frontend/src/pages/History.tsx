@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getEffectiveUserId } from "../lib/user";
 
 interface Appeal {
   id: string;
@@ -15,23 +16,63 @@ const appealStatusMap: Record<string, string> = {
   slate: "bg-slate-100 text-slate-500",
 };
 
+const TICKET_STATUS: Record<string, { label: string; color: "amber" | "green" | "slate" }> = {
+  new: { label: "Новая", color: "amber" },
+  accepted: { label: "Принята", color: "amber" },
+  in_progress: { label: "В работе", color: "amber" },
+  waiting: { label: "Ждёт уточнения", color: "amber" },
+  resolved: { label: "Решена", color: "green" },
+  closed: { label: "Закрыта", color: "green" },
+  cancelled: { label: "Отменена", color: "slate" },
+};
+
 export default function History() {
   const navigate = useNavigate();
   const [history, setHistory] = useState<Appeal[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let alive = true;
+    let local: Appeal[] = [];
     try {
       const raw = JSON.parse(localStorage.getItem("history") || "[]");
-      setHistory(Array.isArray(raw) ? raw : []);
-    } catch {
-      setHistory([]);
-    }
+      local = Array.isArray(raw) ? raw : [];
+    } catch { local = []; }
+    (async () => {
+      let server: Appeal[] = [];
+      try {
+        const uid = getEffectiveUserId();
+        const r = await fetch(`/api/users/${encodeURIComponent(uid)}/tickets`);
+        if (r.ok) {
+          const list = await r.json();
+          if (Array.isArray(list)) {
+            server = list.slice(0, 30).map((t: { id: number; title: string; status: string; created_at: string }) => {
+              const m = TICKET_STATUS[t.status] || { label: t.status, color: "slate" as const };
+              return {
+                id: `№${t.id}`,
+                title: t.title || "Обращение",
+                date: String(t.created_at || "").slice(0, 10),
+                status: m.label,
+                statusColor: m.color,
+              };
+            });
+          }
+        }
+      } catch { /* offline — покажем локальное */ }
+      if (!alive) return;
+      // Серверные заявки первыми (там же история из бота), потом локальные без дублей
+      const seen = new Set(server.map((a) => `${a.title}|${a.date}`));
+      const merged = [...server, ...local.filter((a) => !seen.has(`${a.title}|${a.date}`))];
+      setHistory(merged);
+      setLoading(false);
+    })();
+    return () => { alive = false; };
   }, []);
 
   function clearAll() {
-    if (!confirm("Удалить всю историю обращений?")) return;
+    if (!confirm("Удалить локальную историю? Заявки на сервере (в том числе из бота) останутся.")) return;
     localStorage.removeItem("history");
-    setHistory([]);
+    setHistory((prev) => prev.filter((a) => a.id.startsWith("№") && /^\u2116\d+$/.test(a.id)));
   }
 
   return (
@@ -62,7 +103,7 @@ export default function History() {
           <div>
             <h1 className="text-[28px] font-extrabold text-[#0F172A] mb-1">Мои обращения</h1>
             <p className="text-[14px] text-[#64748B]">
-              Всего: {history.length}
+              {loading ? "Загружаю…" : `Всего: ${history.length} (сайт и бот — вместе)`}
             </p>
           </div>
           {history.length > 0 && (
@@ -75,7 +116,7 @@ export default function History() {
           )}
         </div>
 
-        {history.length === 0 ? (
+        {history.length === 0 && !loading ? (
           <div className="bg-white border border-[#E2E8F0] rounded-2xl p-12 text-center">
             <div className="w-16 h-16 rounded-full bg-[#F1F5F9] flex items-center justify-center mx-auto mb-4">
               <svg viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
@@ -98,7 +139,7 @@ export default function History() {
           <div className="space-y-3">
             {history.map((a) => (
               <article
-                key={a.id}
+                key={a.id + a.title}
                 onClick={() =>
                   navigate("/chat", { state: { initialMessage: a.title } })
                 }

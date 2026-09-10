@@ -21,16 +21,21 @@ from database import (
     get_or_create_conversation,
     get_ticket,
     get_telegram_profile,
+    get_user_organization,
     get_user_profile,
     init_db,
     list_announcements,
     list_categories,
+    list_organizations,
+    list_user_addresses,
+    list_user_readings,
     list_user_receipts,
     list_user_tickets,
     link_website_by_telegram_code,
     register_telegram_user,
     search_knowledge,
     set_conversation_category,
+    update_user_profile,
     upsert_knowledge_article,
     update_ticket_status,
     upsert_receipt,
@@ -73,6 +78,97 @@ OPERATOR_HINTS = (
     "позови", "живой", "поддержк", "специалист",
 )
 
+RECEIPT_HINTS = (
+    "квитанц", "задолжен", "долг", "оплат", "начислен",
+    "куда платить", "счет за", "счёт за", "платеж", "платёж",
+)
+
+METER_HINTS = (
+    "показан", "счётчик", "счетчик", "прибор уч",
+    "передать показания", "подать показания",
+)
+
+ORG_HINTS = (
+    "моя ук", "управляющ", "тсж", "жэк", "жск",
+    "кто обслуживает", "телефон ук", "аварийная служба", "диспетчерская",
+)
+
+OUTAGE_HINTS = (
+    "объявлен", "отключен", "отключ", "когда отключат", "планов",
+)
+
+RECEIPT_STATUS_NAMES = {
+    "unpaid": "не оплачена",
+    "paid": "оплачена",
+    "overdue": "просрочена",
+    "cancelled": "отменена",
+}
+
+
+def _receipts_answer(user_id: str) -> str | None:
+    receipts = list_user_receipts(user_id, 5)
+    if not receipts:
+        return (
+            "На этот профиль квитанций пока нет. "
+            "Если вы регистрировались в боте — привяжите Telegram на странице профиля, "
+            "и я подтяну ваши начисления сюда."
+        )
+    lines = []
+    debt = 0
+    for r in receipts:
+        amount = (r.get("amount_cents") or 0) / 100
+        st = r.get("status", "")
+        if st in ("unpaid", "overdue"):
+            debt += amount
+        st_name = RECEIPT_STATUS_NAMES.get(st, st)
+        lines.append(f"• {r.get('billing_period')} — {r.get('provider')}: {amount:,.2f} ₽ ({st_name})".replace(",", " "))
+    head = f"Ваши последние квитанции (долг: {debt:,.2f} ₽):".replace(",", " ")
+    return head + "\n" + "\n".join(lines)
+
+
+def _meters_answer(user_id: str) -> str | None:
+    readings = list_user_readings(user_id, 3)
+    if not readings:
+        return (
+            "Показаний на этот профиль пока нет. "
+            "Откройте раздел «Подать показания» на сайте или нажмите «Передать показания» в боте — "
+            "нужны адрес, ресурс и число на счётчике."
+        )
+    lines = []
+    for m in readings:
+        addr = f"{m.get('street', '')} {m.get('house', '')}".strip()
+        lines.append(f"• {m.get('resource')}: {m.get('value')} ({addr}, {m.get('measured_at', '')[:10]})")
+    return "Последние показания:\n" + "\n".join(lines) + "\n\nНовые можно подать в разделе «Подать показания»."
+
+
+def _org_answer(user_id: str) -> str | None:
+    data = get_user_organization(user_id)
+    mgmt = data.get("management") or {}
+    parts = []
+    if mgmt.get("name"):
+        contact = mgmt.get("phone") or "телефон не указан"
+        site = f", сайт: {mgmt.get('website')}" if mgmt.get("website") else ""
+        parts.append(f"Ваша управляющая компания: {mgmt.get('name')} — {contact}{site}.")
+    else:
+        parts.append("Управляющая компания за профилем не закреплена.")
+    em = data.get("emergency") or []
+    if em:
+        nums = ", ".join(f"{e.get('name')}: {e.get('phone')}" for e in em if e.get("phone"))
+        if nums:
+            parts.append(f"Аварийные номера: {nums}.")
+    parts.append("При запахе газа, дыме или угрозе жизни сначала звоните 112.")
+    return " ".join(parts)
+
+
+def _outages_answer(user_id: str) -> str | None:
+    profile = get_user_profile(user_id) or {}
+    city = profile.get("city") or "Томск"
+    items = list_announcements(city)[:3]
+    if not items:
+        return f"Активных объявлений по городу {city} сейчас нет. Если света/воды нет только у вас — опишите адрес, заведём заявку."
+    lines = [f"• {a.get('title', '')}: {(a.get('body') or '')[:220]}" for a in items]
+    return f"Что известно по городу {city}:\n" + "\n".join(lines)
+
 
 
 class SupportRequest(BaseModel):
@@ -111,6 +207,15 @@ class AddressRequest(BaseModel):
     entrance: str | None = Field(default=None, max_length=30)
     floor: str | None = Field(default=None, max_length=30)
     is_primary: bool = True
+
+
+class ProfileUpdateRequest(BaseModel):
+    display_name: str | None = Field(default=None, max_length=120)
+    phone: str | None = Field(default=None, max_length=32)
+    city: str | None = Field(default=None, max_length=80)
+    street: str | None = Field(default=None, max_length=180)
+    house: str | None = Field(default=None, max_length=30)
+    apartment: str | None = Field(default=None, max_length=30)
 
 
 class TicketRequest(BaseModel):
@@ -219,6 +324,34 @@ def user_profile(user_id: str):
     return profile
 
 
+@app.get("/api/users/{user_id}/addresses")
+def user_addresses(user_id: str):
+    return list_user_addresses(user_id)
+
+
+@app.put("/api/users/{user_id}/profile")
+def update_profile(user_id: str, req: ProfileUpdateRequest):
+    profile = update_user_profile(user_id, **req.model_dump(exclude_none=True))
+    if not profile:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    return profile
+
+
+@app.get("/api/organizations")
+def organizations():
+    return list_organizations()
+
+
+@app.get("/api/users/{user_id}/organization")
+def user_organization(user_id: str):
+    return get_user_organization(user_id)
+
+
+@app.get("/api/users/{user_id}/meter-readings")
+def user_meter_readings(user_id: str, limit: int = Query(default=20, ge=1, le=100)):
+    return list_user_readings(user_id, limit)
+
+
 @app.post("/api/telegram/register", status_code=201)
 def telegram_register(req: TelegramRegistrationRequest):
     try:
@@ -235,6 +368,14 @@ def telegram_link_code(req: TelegramIdRequest):
     if not profile:
         raise HTTPException(status_code=404, detail="Сначала пройдите регистрацию в Telegram")
     return {"link_code": create_telegram_link_code(profile["id"]), "expires_in_minutes": 15}
+
+
+@app.get("/api/telegram/{telegram_id}/profile")
+def telegram_profile(telegram_id: str):
+    profile = get_telegram_profile(telegram_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Профиль не найден. Пройдите регистрацию в боте: /register")
+    return profile
 
 
 @app.post("/api/users/link-telegram")
@@ -269,7 +410,31 @@ def handle_support(req: SupportRequest):
     emergency = emergency_text is not None
     asks_operator = any(hint in lowered for hint in OPERATOR_HINTS)
 
-    if emergency:
+    # Личные данные — отвечаем из базы, а не из LLM: квитанции, показания, УК, объявления.
+    data_answer: str | None = None
+    data_category: str | None = None
+    data_category_name: str | None = None
+    if not emergency:
+        if any(h in lowered for h in RECEIPT_HINTS):
+            data_answer = _receipts_answer(req.user_id)
+            data_category, data_category_name = "billing", "Начисления и оплата"
+        elif any(h in lowered for h in METER_HINTS):
+            data_answer = _meters_answer(req.user_id)
+            data_category, data_category_name = "meters", "Приборы учёта"
+        elif any(h in lowered for h in ORG_HINTS):
+            data_answer = _org_answer(req.user_id)
+            data_category, data_category_name = "other", "Другое"
+        elif any(h in lowered for h in OUTAGE_HINTS):
+            data_answer = _outages_answer(req.user_id)
+            data_category, data_category_name = "other", "Другое"
+
+    if data_answer is not None:
+        response_text = data_answer
+        category = data_category or category
+        category_name = data_category_name or category_name
+        confidence = 1.0
+        llm_used = False
+    elif emergency:
         response_text = emergency_text or EMERGENCY_FALLBACK
         confidence = 1.0
         llm_used = False

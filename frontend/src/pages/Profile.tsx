@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getEffectiveUserId, getWebUserId } from "../lib/user";
 
 interface ProfileData {
   city: string;
@@ -9,17 +10,40 @@ interface ProfileData {
   phone: string;
 }
 
-function getWebUserId(): string {
-  let id = localStorage.getItem("web_user_id");
-  if (!id) {
-    id = `web-${crypto.randomUUID()}`;
-    localStorage.setItem("web_user_id", id);
-  }
-  return id;
+interface Receipt {
+  billing_period: string;
+  provider: string;
+  amount_cents: number;
+  status: string;
 }
+
+interface Reading {
+  id: number;
+  resource: string;
+  value: number;
+  measured_at: string;
+  street?: string;
+  house?: string;
+}
+
+const RESOURCE_NAMES: Record<string, string> = {
+  cold_water: "Холодная вода",
+  hot_water: "Горячая вода",
+  electricity: "Электричество",
+  gas: "Газ",
+  heating: "Отопление",
+};
+
+const RECEIPT_STATUS: Record<string, string> = {
+  unpaid: "не оплачена",
+  paid: "оплачена",
+  overdue: "просрочена",
+  cancelled: "отменена",
+};
 
 export default function Profile() {
   const navigate = useNavigate();
+  const [uid] = useState(() => getEffectiveUserId());
 
   const tgUser = (() => {
     try {
@@ -45,30 +69,131 @@ export default function Profile() {
     phone: saved.phone || "",
   });
 
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [savedFlag, setSavedFlag] = useState(false);
+  const [fromServer, setFromServer] = useState(false);
 
   const [linkCode, setLinkCode] = useState("");
   const [linkLoading, setLinkLoading] = useState(false);
   const [linkError, setLinkError] = useState("");
   const isLinked = localStorage.getItem("tg_linked") === "true";
 
+  const [receipts, setReceipts] = useState<Receipt[]>([]);
+  const [readings, setReadings] = useState<Reading[]>([]);
+  const [mgmtName, setMgmtName] = useState("");
+
   const initials =
     (tgUser.first_name?.[0] || "И") + (tgUser.last_name?.[0] || "П");
   const displayName = tgUser.first_name
     ? `${tgUser.first_name} ${tgUser.last_name || ""}`.trim()
-    : "Пользователь";
-  const username = tgUser.username ? `@${tgUser.username}` : "";
+    : tgUser.display_name || "Пользователь";
+  const username = tgUser.username ? `@${tgUser.username}` : tgUser.telegram_username ? `@${tgUser.telegram_username}` : "";
+
+  // Подтягиваем то, что вводили в боте (/register хранит всё в базе)
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const r = await fetch(`/api/users/${encodeURIComponent(uid)}/profile`);
+        if (r.ok) {
+          const p = await r.json();
+          if (!alive) return;
+          const next: ProfileData = {
+            city: p.city || "",
+            street: p.street || "",
+            house: p.house || "",
+            apartment: p.apartment || "",
+            phone: p.phone || "",
+          };
+          // Сервер — источник правды, если там что-то заполнено
+          if (next.city || next.street || next.phone) {
+            setForm(next);
+            localStorage.setItem("profile", JSON.stringify(next));
+            setFromServer(true);
+          }
+          if (p.display_name || p.telegram_username) {
+            try {
+              const cur = JSON.parse(localStorage.getItem("tg_user") || "{}");
+              localStorage.setItem(
+                "tg_user",
+                JSON.stringify({
+                  ...cur,
+                  id: p.id || cur.id,
+                  display_name: p.display_name || cur.display_name,
+                  telegram_username: p.telegram_username || cur.telegram_username,
+                })
+              );
+            } catch { /* ignore */ }
+          }
+        }
+      } catch { /* offline — покажем кэш */ }
+      finally {
+        if (alive) setLoading(false);
+      }
+      // Квитанции / показания / УК для этого же пользователя
+      try {
+        const rr = await fetch(`/api/users/${encodeURIComponent(uid)}/receipts?limit=3`);
+        if (rr.ok && alive) setReceipts(await rr.json());
+      } catch { /* ignore */ }
+      try {
+        const mr = await fetch(`/api/users/${encodeURIComponent(uid)}/meter-readings?limit=3`);
+        if (mr.ok && alive) setReadings(await mr.json());
+      } catch { /* ignore */ }
+      try {
+        const or = await fetch(`/api/users/${encodeURIComponent(uid)}/organization`);
+        if (or.ok && alive) {
+          const d = await or.json();
+          if (d?.management?.name) setMgmtName(d.management.name);
+        }
+      } catch { /* ignore */ }
+    })();
+    return () => { alive = false; };
+  }, [uid]);
 
   function handleChange(field: keyof ProfileData, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
     setSavedFlag(false);
+    setSaveError("");
   }
 
-  function handleSave(e: React.FormEvent) {
+  async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    localStorage.setItem("profile", JSON.stringify(form));
-    setSavedFlag(true);
-    setTimeout(() => setSavedFlag(false), 2500);
+    setSaving(true);
+    setSaveError("");
+    try {
+      const r = await fetch(`/api/users/${encodeURIComponent(uid)}/profile`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: form.phone || null,
+          city: form.city || null,
+          street: form.street || null,
+          house: form.house || null,
+          apartment: form.apartment || null,
+        }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const p = await r.json();
+      const next: ProfileData = {
+        city: p.city || form.city,
+        street: p.street || form.street,
+        house: p.house || form.house,
+        apartment: p.apartment || form.apartment,
+        phone: p.phone || form.phone,
+      };
+      setForm(next);
+      localStorage.setItem("profile", JSON.stringify(next));
+      setSavedFlag(true);
+      setTimeout(() => setSavedFlag(false), 2500);
+    } catch {
+      // Нет связи — сохраним хотя бы локально, чтобы не потерять ввод
+      localStorage.setItem("profile", JSON.stringify(form));
+      setSaveError("Нет связи с сервером — сохранил локально. Проверьте позже.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleLinkTelegram(e: React.FormEvent) {
@@ -101,12 +226,32 @@ export default function Profile() {
       }
 
       if (data?.user) {
-        localStorage.setItem("tg_user", JSON.stringify(data.user));
+        const u = data.user;
+        // После привязки единый id — telegram-xxx: все запросы пойдут с ним
+        const prev = (() => { try { return JSON.parse(localStorage.getItem("tg_user") || "{}"); } catch { return {}; } })();
+        localStorage.setItem("tg_user", JSON.stringify({
+          ...prev,
+          id: u.id,
+          first_name: prev.first_name || u.display_name?.split(" ")?.[0],
+          last_name: prev.last_name || u.display_name?.split(" ")?.slice(1)?.join(" "),
+          display_name: u.display_name,
+          username: u.telegram_username || prev.username,
+          telegram_username: u.telegram_username,
+        }));
+        if (u.city || u.street || u.phone) {
+          const next = {
+            city: u.city || "",
+            street: u.street || "",
+            house: u.house || "",
+            apartment: u.apartment || "",
+            phone: u.phone || "",
+          };
+          localStorage.setItem("profile", JSON.stringify(next));
+        }
       }
       localStorage.setItem("auth", "true");
       localStorage.setItem("tg_linked", "true");
       setLinkCode("");
-      // Перезагружаем, чтобы обновилась карточка
       window.location.reload();
     } catch {
       setLinkError("Сервис недоступен. Попробуйте позже");
@@ -160,7 +305,11 @@ export default function Profile() {
       <main className="max-w-[900px] mx-auto px-8 py-10">
         <h1 className="text-[28px] font-extrabold text-[#0F172A] mb-1">Личный кабинет</h1>
         <p className="text-[14px] text-[#64748B] mb-8">
-          Заполните данные — они используются для отключений, квитанций и обращений в УК
+          {loading
+            ? "Загружаю данные…"
+            : fromServer
+              ? "Данные подтянуты из вашего профиля (в том числе из бота)"
+              : "Заполните данные — они используются для отключений, квитанций и обращений в УК"}
         </p>
 
         <div className="grid grid-cols-3 gap-6">
@@ -200,6 +349,21 @@ export default function Profile() {
                   )}
                 </div>
               </div>
+            </div>
+
+            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 mt-4 space-y-3">
+              <button onClick={() => navigate("/receipts")} className="w-full text-left p-3 rounded-xl bg-[#F8FAFC] hover:bg-[#EBF2FF] transition-colors">
+                <p className="text-[13px] font-semibold text-[#0F172A]">🧾 Мои квитанции</p>
+                <p className="text-[12px] text-[#64748B]">{receipts.length ? `Последняя: ${receipts[0].billing_period} — ${(receipts[0].amount_cents / 100).toFixed(2)} ₽` : "Пока нет данных"}</p>
+              </button>
+              <button onClick={() => navigate("/meters")} className="w-full text-left p-3 rounded-xl bg-[#F8FAFC] hover:bg-teal-50 transition-colors">
+                <p className="text-[13px] font-semibold text-[#0F172A]">💡 Показания</p>
+                <p className="text-[12px] text-[#64748B]">{readings.length ? `${RESOURCE_NAMES[readings[0].resource] || readings[0].resource}: ${readings[0].value}` : "Подать показания"}</p>
+              </button>
+              <button onClick={() => navigate("/company")} className="w-full text-left p-3 rounded-xl bg-[#F8FAFC] hover:bg-violet-50 transition-colors">
+                <p className="text-[13px] font-semibold text-[#0F172A]">🏠 Моя УК</p>
+                <p className="text-[12px] text-[#64748B]">{mgmtName || "Узнать свою УК"}</p>
+              </button>
             </div>
           </aside>
 
@@ -276,9 +440,10 @@ export default function Profile() {
               <div className="flex items-center gap-3">
                 <button
                   type="submit"
-                  className="bg-[#1B5EBE] hover:bg-[#1449A0] text-white text-[14px] font-semibold px-6 py-3 rounded-xl transition-colors"
+                  disabled={saving}
+                  className="bg-[#1B5EBE] hover:bg-[#1449A0] disabled:bg-[#CBD5E1] text-white text-[14px] font-semibold px-6 py-3 rounded-xl transition-colors"
                 >
-                  Сохранить
+                  {saving ? "Сохранение…" : "Сохранить"}
                 </button>
                 {savedFlag && (
                   <span className="text-[13px] text-emerald-600 font-medium flex items-center gap-1.5">
@@ -289,6 +454,12 @@ export default function Profile() {
                   </span>
                 )}
               </div>
+              {saveError && <p className="text-[13px] text-amber-700 mt-3">{saveError}</p>}
+              {receipts.length > 0 && (
+                <p className="text-[12px] text-[#94A3B8] mt-4">
+                  Последняя квитанция: {receipts[0].billing_period} · {receipts[0].provider} · {(receipts[0].amount_cents / 100).toFixed(2)} ₽ ({RECEIPT_STATUS[receipts[0].status] || receipts[0].status})
+                </p>
+              )}
             </form>
 
             <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6">
