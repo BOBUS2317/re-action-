@@ -22,17 +22,22 @@ interface HistoryEntry {
 
 const QUICK_REPLIES = [
   "Куда платить за воду",
-  "Подать показания",
-  "Аварийная служба",
-  "Мои квитанции",
+  "Передать показания счётчиков",
+  "Аварийная ситуация",
+  "Проверить квитанции",
 ];
 
-// Вспомогательная функция для форматирования времени
-function formatTime(date: Date): string {
-  return date.toLocaleTimeString("ru-RU", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+function formatTime(date: Date) {
+  return date.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+}
+
+function getWebUserId(): string {
+  let id = localStorage.getItem("web_user_id");
+  if (!id) {
+    id = `web-${crypto.randomUUID()}`;
+    localStorage.setItem("web_user_id", id);
+  }
+  return id;
 }
 
 function BotAvatar() {
@@ -48,7 +53,7 @@ function BotAvatar() {
 function OperatorAvatar() {
   return (
     <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center shrink-0">
-      <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="w-4.5 h-4.5">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
         <circle cx="12" cy="9" r="3.2" />
         <path d="M4.5 20c0-3.6 3.4-6 7.5-6s7.5 2.4 7.5 6" />
         <path d="M6 9.5V8a6 6 0 0112 0v1.5" />
@@ -105,7 +110,7 @@ const INITIAL_MESSAGES: Message[] = [
   {
     id: 1,
     role: "bot",
-    text: "Здравствуйте! Я виртуальный помощник ЖКХ-сервиса. Помогу разобраться с оплатой, показаниями счётчиков, плановыми отключениями и многим другим.\n\nЧем могу помочь?",
+    text: "Здравствуйте! Я виртуальный помощник ЖКХ-сервиса. Помогу разобраться с оплатой, показаниями счётчиков, плановыми отключениями и обращениями в УК.\n\nЧем могу помочь?",
     time: formatTime(new Date()),
   },
 ];
@@ -122,8 +127,8 @@ export default function Chat() {
   const [typing, setTyping] = useState(false);
   const [currentTicketId, setCurrentTicketId] = useState<string | null>(null);
   const [ticketStatus, setTicketStatus] = useState<"amber" | "green" | "slate">("amber");
-  const [ticketTitle] = useState<string>("");
-  const [ticketDate] = useState<string>("");
+  const [ticketTitle, setTicketTitle] = useState<string>("");
+  const [ticketDate, setTicketDate] = useState<string>("");
   const [ticketRating, setTicketRating] = useState<number | undefined>(undefined);
 
   const [showRatingModal, setShowRatingModal] = useState(false);
@@ -164,6 +169,34 @@ export default function Chat() {
     window.history.replaceState({}, "");
   }, [location.state]);
 
+  function saveToHistory(text: string): string {
+    try {
+      const raw = JSON.parse(localStorage.getItem("history") || "[]");
+      const list: HistoryEntry[] = Array.isArray(raw) ? raw : [];
+      const now = new Date();
+      const dateStr = now.toLocaleDateString("ru-RU", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+      const id = `ЖКХ-${now.getFullYear()}-${String(
+        Math.floor(Math.random() * 9000) + 1000
+      )}`;
+      const entry: HistoryEntry = {
+        id,
+        title: text,
+        date: dateStr,
+        status: "В работе",
+        statusColor: "amber",
+      };
+      const next = [entry, ...list].slice(0, 20);
+      localStorage.setItem("history", JSON.stringify(next));
+      return id;
+    } catch {
+      return "";
+    }
+  }
+
   function updateTicket(id: string, patch: Partial<HistoryEntry>) {
     try {
       const raw = JSON.parse(localStorage.getItem("history") || "[]");
@@ -179,50 +212,76 @@ export default function Chat() {
 
   async function sendMessage(text: string) {
     if (!text.trim()) return;
+    const trimmed = text.trim();
+
     const now = new Date();
     const userMsg: Message = {
       id: Date.now(),
       role: "user",
-      text: text.trim(),
+      text: trimmed,
       time: formatTime(now),
     };
-    
-    // Если тикет еще не создан, создаем базовый ID при первом сообщении
-    if (!currentTicketId) {
-      const newId = `ЖКХ-${now.getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
-      setCurrentTicketId(newId);
-    }
-
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
+
+    if (trimmed.length >= 3 && !currentTicketId) {
+      const id = saveToHistory(trimmed);
+      if (id) {
+        setCurrentTicketId(id);
+        setTicketStatus("amber");
+        setTicketTitle(trimmed);
+        setTicketDate(
+          now.toLocaleDateString("ru-RU", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })
+        );
+      }
+    }
+
     setTyping(true);
 
     try {
-      let webId = localStorage.getItem("web_user_id");
-      if (!webId) {
-        webId = `web-${crypto.randomUUID()}`;
-        localStorage.setItem("web_user_id", webId);
-      }
       const r = await fetch("/api/support", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: webId,
-          message: text.trim(),
-          channel: "web"
-        })
+          user_id: getWebUserId(),
+          message: trimmed,
+          channel: "web",
+        }),
       });
+
+      if (!r.ok) {
+        throw new Error(`HTTP ${r.status}`);
+      }
+
       const data = await r.json();
-      setMessages((prev) => [...prev, {
-        id: Date.now() + 1, role: "bot",
-        text: data.response, time: formatTime(new Date())
-      }]);
+      const replyText =
+        typeof data?.response === "string"
+          ? data.response
+          : "Не удалось получить ответ. Попробуйте переформулировать вопрос.";
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          role: "bot",
+          text: replyText,
+          time: formatTime(new Date()),
+        },
+      ]);
     } catch {
-      setMessages((prev) => [...prev, {
-        id: Date.now() + 1, role: "bot",
-        text: "Сервис временно недоступен. При аварии звоните 112",
-        time: formatTime(new Date())
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          role: "bot",
+          text: "Сервис временно недоступен. Попробуйте позже или обратитесь в аварийную службу по единому номеру 112.",
+          time: formatTime(new Date()),
+        },
+      ]);
     } finally {
       setTyping(false);
     }
@@ -284,7 +343,7 @@ export default function Chat() {
         {
           id: Date.now() + 10,
           role: "bot",
-          text: `Понял вас! Перевожу на оператора… ⏳`,
+          text: "Понял вас! Перевожу на оператора… ⏳",
           time: formatTime(new Date()),
         },
       ]);
@@ -297,7 +356,7 @@ export default function Chat() {
           {
             id: Date.now() + 11,
             role: "operator",
-            text: `Здравствуйте! Я **Алексей**, диспетчер ООО «Уют». Вижу ваше обращение **${currentTicketId}**.\n\nЧто случилось? Опишите ситуацию подробнее — постараюсь помочь.`,
+            text: `Здравствуйте! Я **Алексей**, оператор поддержки. Вижу ваше обращение **${currentTicketId}**.\n\nОпишите ситуацию подробнее — постараюсь помочь.`,
             time: formatTime(new Date()),
           },
         ]);
@@ -447,7 +506,6 @@ export default function Chat() {
             {[
               { label: "ID обращения", value: currentTicketId || "—", mono: true },
               { label: "Тема", value: ticketTitle || "—" },
-              { label: "Адрес", value: "ул. Ленина, 15" },
               { label: "Дата создания", value: ticketDate || "—" },
             ].map((f) => (
               <div key={f.label}>
@@ -522,13 +580,13 @@ export default function Chat() {
                       <rect x="17" y="8.5" width="2.5" height="3.5" rx="1" fill="white" />
                     </svg>
                   ) : (
-                    "АК"
+                    "П"
                   )}
                 </div>
                 <div>
-                  <p className="text-[13px] font-semibold text-[#0F172A]">Алексей К.</p>
+                  <p className="text-[13px] font-semibold text-[#0F172A]">Алексей</p>
                   <p className="text-[11px] text-[#94A3B8]">
-                    {ticketStatus === "green" ? "Оператор • онлайн" : "Диспетчер ООО «Уют»"}
+                    {ticketStatus === "green" ? "Оператор • онлайн" : "Поддержка"}
                   </p>
                 </div>
               </div>
