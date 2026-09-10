@@ -1,0 +1,5 @@
+ghcr.io/ggml-org/llama.cpp:server
+python:3.12-slim
+node:22-alpine
+nginx:1.27-alpine
+Qwen/Qwen2.5-1.5B-Instruct-GGUF:Q4_K_M
