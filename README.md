@@ -5,12 +5,9 @@
 ## Папки и основные файлы
 
 - `frontend/` — готовый React-интерфейс из GitHub; `src/pages/Chat.tsx` отправляет сообщения в API.
-- `backend/main.py` — API сайта и бота.
-- `backend/database.py` — работа с SQLite и полнотекстовый поиск FTS5.
-- `backend/migrations/` — структура базы и начальные категории/инструкции.
-- `backend/rag.py` — передаёт найденный контекст локальному Qwen.
-- `bot/bot.py` — готовый aiogram-бот из GitHub, подключённый к API.
-- `dependencies/` — отдельные копии манифестов с точными версиями пакетов и образов.
+- `backend/` — API, SQLite, миграции и связь с Qwen; описание находится в `BACKEND_GUIDE.md`.
+- `bot/` — Telegram-бот и его отдельные Docker/Python-зависимости.
+- `dependencies/` — копии манифестов с точными версиями; описание находится в `DEPENDENCIES.md`.
 - `docker-compose.yml` — запускает весь проект.
 
 ## База данных

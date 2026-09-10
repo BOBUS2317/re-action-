@@ -8,6 +8,11 @@ backend/data/
 __pycache__/
 *.pyc
 backend/.venv/
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.npm-cache/
+*.log
+*.local
 /.cache/
 /.integration-backup/
 .idea/

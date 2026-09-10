@@ -21,7 +21,9 @@ services:
     restart: unless-stopped
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: backend.Dockerfile
     ports:
       - "127.0.0.1:8000:8000"
     environment:
@@ -37,7 +39,9 @@ services:
     restart: unless-stopped
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: frontend.Dockerfile
     ports:
       - "127.0.0.1:8081:80"
     depends_on:
@@ -46,7 +50,9 @@ services:
     restart: unless-stopped
 
   bot:
-    build: ./bot
+    build:
+      context: ./bot
+      dockerfile: bot.Dockerfile
     environment:
       BOT_TOKEN: ${BOT_TOKEN}
       BACKEND_URL: http://backend:8000
