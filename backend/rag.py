@@ -8,6 +8,12 @@ from gigachat import GigaChat
 # Загружаем ключ GigaChat
 GIGACHAT_CREDENTIALS = os.getenv("GIGACHAT_CREDENTIALS", "")
 
+giga_client = GigaChat(
+    credentials=GIGACHAT_CREDENTIALS, 
+    verify_ssl_certs=False, 
+    scope="GIGACHAT_API_CORP" # Или PERS, в зависимости от того, что заработало
+)
+
 print("Загрузка модели эмбеддингов rubert-tiny2...")
 embedder = SentenceTransformer('cointegrated/rubert-tiny2')
 
@@ -78,28 +84,40 @@ def fallback_answer(context: list) -> str:
     return "Извините, сервис временно недоступен. Пожалуйста, позвоните в диспетчерскую службу."
 
 def ask_qwen(message: str, context: list, previous_messages: list) -> str:
-    """Вызов GigaChat API"""
-    context_text = "\n".join([f"- {c['title']}: {c['body']}" for c in context]) if context else "Информации нет."
+    if context:
+        context_text = "\n".join([f"- {c.get('title', '')}: {c.get('body', '')}" for c in context])
+    else:
+        context_text = "Информации нет."
 
     system_prompt = (
-        "Ты — виртуальный помощник технической поддержки ЖКХ. "
-        "Опирайся ИСКЛЮЧИТЕЛЬНО на предоставленный контекст.\n"
-        "Если проблема аварийная или просят оператора, начни ответ с: [ТРЕБУЕТСЯ_ЭСКАЛАЦИЯ].\n\n"
+        "Ты — виртуальный помощник ЖКХ. Опирайся ТОЛЬКО на контекст.\n"
+        "ОТВЕЧАЙ ОЧЕНЬ КРАТКО, МАКСИМУМ 1-2 ПРЕДЛОЖЕНИЯ.\n"
+        "Если авария — начни ответ с: [ТРЕБУЕТСЯ_ЭСКАЛАЦИЯ].\n\n"
         f"Контекст:\n{context_text}"
     )
 
     try:
-        with GigaChat(credentials=GIGACHAT_CREDENTIALS, verify_ssl_certs=False, scope="GIGACHAT_API_PERS") as giga:
-            payload = [{"role": "system", "content": system_prompt}]
-            
-            for msg in previous_messages[-4:]:
-                payload.append({"role": msg["role"], "content": msg.get("content", "")})
+        payload_messages = [{"role": "system", "content": system_prompt}]
+        
+        if previous_messages:
+            for msg in previous_messages[-2:]: # Берем только 2 последних сообщения, а не 4
+                payload_messages.append({
+                    "role": msg["role"], 
+                    "content": msg.get("content", "")
+                })
                 
-            payload.append({"role": "user", "content": message})
-            
-            res = giga.chat({"messages": payload, "temperature": 0.1})
-            return res.choices[0].message.content
-            
+        payload_messages.append({"role": "user", "content": message})
+        
+        # Используем глобальный клиент
+        response = giga_client.chat({
+            "model": "GigaChat",     # 2. Выбираем самую быструю Lite-модель
+            "messages": payload_messages,
+            "temperature": 0.1,
+            "max_tokens": 100        # 3. Жестко режем длину ответа
+        })
+        
+        return response.choices[0].message.content
+
     except Exception as exc:
         print(f"ОШИБКА LLM: {exc}")
         raise requests.RequestException("Сбой GigaChat")
