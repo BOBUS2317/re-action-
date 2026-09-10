@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from typing import Literal
 
-import requests
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from config import CORS_ORIGINS, QWEN_API_URL, QWEN_MODEL
+from config import CORS_ORIGINS, GIGACHAT_CREDENTIALS, GIGACHAT_MODEL
 from database import (
     add_address,
     add_meter_reading,
@@ -40,13 +39,14 @@ from database import (
     update_ticket_status,
     upsert_receipt,
 )
-from rag import ask_qwen, fallback_answer, retrieve
+from rag import ask_gigachat, fallback_answer, retrieve
+from rag import ask_qwen  # noqa: F401 - alias для старых патчей/клиентов
 
 
 app = FastAPI(
     title="Ре:Акция API",
-    description="Единый backend сайта и Telegram-бота: обращения, RAG и Qwen.",
-    version="2.0.0",
+    description="Единый backend сайта и Telegram-бота: обращения, RAG и GigaChat.",
+    version="2.1.0",
     docs_url="/api/docs",
     openapi_url="/api/openapi.json",
 )
@@ -296,13 +296,13 @@ class KnowledgeArticleRequest(BaseModel):
 
 @app.get("/api/health")
 def health():
-    qwen_ready = False
-    try:
-        models_url = QWEN_API_URL.rsplit("/chat/completions", 1)[0] + "/models"
-        qwen_ready = requests.get(models_url, timeout=2).ok
-    except requests.RequestException:
-        pass
-    return {"status": "ok", "database": database_stats(), "qwen_ready": qwen_ready}
+    configured = bool(GIGACHAT_CREDENTIALS)
+    return {
+        "status": "ok",
+        "database": database_stats(),
+        "gigachat_configured": configured,
+        "qwen_ready": configured,  # deprecated alias для старого мониторинга
+    }
 
 
 @app.get("/api/categories")
@@ -440,7 +440,7 @@ def handle_support(req: SupportRequest):
         llm_used = False
     else:
         try:
-            response_text = ask_qwen(req.message, context, previous_messages)
+            response_text = ask_gigachat(req.message, context, previous_messages)
             if not response_text or not response_text.strip():
                 raise ValueError("empty LLM response")
             response_text = response_text.strip()
@@ -463,7 +463,7 @@ def handle_support(req: SupportRequest):
         conversation["id"],
         "assistant",
         response_text,
-        model=QWEN_MODEL if llm_used else "safety-or-rag-fallback",
+        model=GIGACHAT_MODEL if llm_used else "safety-or-rag-fallback",
         confidence=confidence,
     )
 

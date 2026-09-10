@@ -1,40 +1,19 @@
 services:
-  qwen:
-    image: ghcr.io/ggml-org/llama.cpp:server
-    command:
-      - -hf
-      - ${QWEN_MODEL:-Qwen/Qwen2.5-1.5B-Instruct-GGUF:Q4_K_M}
-      - --host
-      - 0.0.0.0
-      - --port
-      - "8080"
-      - -c
-      - "2048"
-      - -n
-      - "384"
-      - -t
-      - "2"
-    volumes:
-      - qwen_cache:/root/.cache
-    mem_limit: 2500m
-    cpus: 2
-    restart: unless-stopped
-
   backend:
     build:
       context: ./backend
       dockerfile: backend.Dockerfile
     ports:
       - "127.0.0.1:8000:8000"
+    env_file:
+      - .env
     environment:
       DB_NAME: /data/support.db
-      QWEN_API_URL: http://qwen:8080/v1/chat/completions
-      QWEN_MODEL: Qwen2.5-1.5B-Instruct
+      GIGACHAT_MODEL: ${GIGACHAT_MODEL:-GigaChat}
+      GIGACHAT_SCOPE: ${GIGACHAT_SCOPE:-GIGACHAT_API_PERS}
       CORS_ORIGINS: http://localhost,http://localhost:5173,https://drunteam.ru,https://www.drunteam.ru
     volumes:
       - database_data:/data
-    depends_on:
-      - qwen
     mem_limit: 400m
     restart: unless-stopped
 
@@ -62,6 +41,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  qwen_cache:
   database_data:
-

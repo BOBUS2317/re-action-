@@ -10,10 +10,11 @@ except ImportError:
 load_dotenv()
 
 DB_NAME = os.getenv("DB_NAME", str(Path("data") / "support.db"))
-QWEN_API_URL = os.getenv("QWEN_API_URL", "http://localhost:8080/v1/chat/completions")
-QWEN_MODEL = os.getenv("QWEN_MODEL", "Qwen2.5-1.5B-Instruct")
-QWEN_API_KEY = os.getenv("QWEN_API_KEY", "")
-QWEN_TIMEOUT = float(os.getenv("QWEN_TIMEOUT", "75"))
+GIGACHAT_CREDENTIALS = os.getenv("GIGACHAT_CREDENTIALS", "")
+GIGACHAT_MODEL = os.getenv("GIGACHAT_MODEL", "GigaChat")
+GIGACHAT_SCOPE = os.getenv("GIGACHAT_SCOPE", "GIGACHAT_API_PERS")
+GIGACHAT_TIMEOUT = float(os.getenv("GIGACHAT_TIMEOUT", "30"))
+GIGACHAT_VERIFY_SSL = os.getenv("GIGACHAT_VERIFY_SSL", "false").lower() in ("1", "true", "yes")
 CORS_ORIGINS = [
     origin.strip()
     for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost").split(",")

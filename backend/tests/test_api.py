@@ -18,7 +18,7 @@ class ApiFlowTest(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
-    @patch("main.ask_qwen", side_effect=requests.ConnectionError("offline"))
+    @patch("main.ask_gigachat", side_effect=requests.ConnectionError("offline"))
     def test_regular_question_uses_database_fallback(self, _):
         result = main.handle_support(
             main.SupportRequest(user_id="web-api-1", message="У меня нет горячей воды")

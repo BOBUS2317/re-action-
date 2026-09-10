@@ -2,7 +2,7 @@
 
 - `main.py` — REST API для сайта и Telegram-бота.
 - `database.py` — запросы к SQLite, миграции и FTS5-поиск.
-- `rag.py` — получает статьи из базы и передаёт контекст локальному Qwen.
+- `rag.py` — получает статьи из базы и передаёт контекст в GigaChat.
 - `config.py` — настройки из переменных окружения.
 - `backend.env.example` — пример настроек для отдельного запуска API.
 - `requirements-backend.txt` — Python-зависимости API.
