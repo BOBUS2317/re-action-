@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface Appeal {
@@ -17,14 +17,16 @@ const appealStatusMap: Record<string, string> = {
 
 export default function History() {
   const navigate = useNavigate();
-  const [history, setHistory] = useState<Appeal[]>(() => {
+  const [history, setHistory] = useState<Appeal[]>([]);
+
+  useEffect(() => {
     try {
       const raw = JSON.parse(localStorage.getItem("history") || "[]");
-      return Array.isArray(raw) ? raw : [];
+      setHistory(Array.isArray(raw) ? raw : []);
     } catch {
-      return [];
+      setHistory([]);
     }
-  });
+  }, []);
 
   function clearAll() {
     if (!confirm("Удалить всю историю обращений?")) return;
