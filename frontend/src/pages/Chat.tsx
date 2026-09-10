@@ -93,7 +93,8 @@ export default function Chat() {
     try {
       // Специальный хардкор для быстрой демонстрации квитанций из бэкенда
       if (text.trim() === "Мои квитанции") {
-        const res = await fetch("/api/receipts/user123");
+        const userId = localStorage.getItem("user_id") || "guest";
+        const res = await fetch(`/api/receipts/${userId}`);
         const data = await res.json();
         let receiptText = "Найдены квитанции по адресу ул. Ленина, 15:\n\n";
         if (data.receipts && data.receipts.length > 0) {
@@ -116,7 +117,7 @@ export default function Chat() {
       const response = await fetch("/api/support", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: "user123", message: text.trim() }),
+        body: JSON.stringify({ user_id: localStorage.getItem("user_id") || "guest", message: text.trim() }),
       });
 
       if (!response.ok) throw new Error("Ошибка сервера");
