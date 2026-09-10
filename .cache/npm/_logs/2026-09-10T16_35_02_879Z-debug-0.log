@@ -1,0 +1,698 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@10.9.8
+2 info using node@v22.23.1
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\.npmrc
+5 silly config load:file:C:\Users\kla1m3n\.npmrc
+6 silly config load:file:C:\Users\kla1m3n\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm ci
+8 verbose argv "ci"
+9 verbose logfile logs-max:10 dir:C:\Users\kla1m3n\Desktop\hackaton\re-action-\.cache\npm\_logs\2026-09-10T16_35_02_879Z-
+10 verbose logfile C:\Users\kla1m3n\Desktop\hackaton\re-action-\.cache\npm\_logs\2026-09-10T16_35_02_879Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+13 silly idealTree buildDeps
+14 silly reify moves {}
+15 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@tailwindcss\oxide-wasm32-wasi
+16 silly reify mark deleted [
+16 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@tailwindcss\\oxide-wasm32-wasi'
+16 silly reify ]
+17 silly audit bulk request {
+17 silly audit   '@alloc/quick-lru': [ '5.3.0' ],
+17 silly audit   '@jridgewell/gen-mapping': [ '0.3.13' ],
+17 silly audit   '@jridgewell/remapping': [ '2.3.5' ],
+17 silly audit   '@jridgewell/resolve-uri': [ '3.1.2' ],
+17 silly audit   '@jridgewell/sourcemap-codec': [ '1.6.0' ],
+17 silly audit   '@jridgewell/trace-mapping': [ '0.3.31' ],
+17 silly audit   '@oxc-project/types': [ '0.149.0' ],
+17 silly audit   '@oxlint/binding-android-arm-eabi': [ '1.82.0' ],
+17 silly audit   '@oxlint/binding-android-arm64': [ '1.82.0' ],
+17 silly audit   '@oxlint/binding-darwin-arm64': [ '1.82.0' ],
+17 silly audit   '@oxlint/binding-darwin-x64': [ '1.82.0' ],
+17 silly audit   '@oxlint/binding-freebsd-x64': [ '1.82.0' ],
+17 silly audit   '@oxlint/binding-linux-arm-gnueabihf': [ '1.82.0' ],
+17 silly audit   '@oxlint/binding-linux-arm-musleabihf': [ '1.82.0' ],
+17 silly audit   '@oxlint/binding-linux-arm64-gnu': [ '1.82.0' ],
+17 silly audit   '@oxlint/binding-linux-arm64-musl': [ '1.82.0' ],
+17 silly audit   '@oxlint/binding-linux-ppc64-gnu': [ '1.82.0' ],
+17 silly audit   '@oxlint/binding-linux-riscv64-gnu': [ '1.82.0' ],
+17 silly audit   '@oxlint/binding-linux-riscv64-musl': [ '1.82.0' ],
+17 silly audit   '@oxlint/binding-linux-s390x-gnu': [ '1.82.0' ],
+17 silly audit   '@oxlint/binding-linux-x64-gnu': [ '1.82.0' ],
+17 silly audit   '@oxlint/binding-linux-x64-musl': [ '1.82.0' ],
+17 silly audit   '@oxlint/binding-openharmony-arm64': [ '1.82.0' ],
+17 silly audit   '@oxlint/binding-win32-arm64-msvc': [ '1.82.0' ],
+17 silly audit   '@oxlint/binding-win32-ia32-msvc': [ '1.82.0' ],
+17 silly audit   '@oxlint/binding-win32-x64-msvc': [ '1.82.0' ],
+17 silly audit   '@rolldown/binding-android-arm-eabi': [ '1.2.8' ],
+17 silly audit   '@rolldown/binding-android-arm64': [ '1.2.8' ],
+17 silly audit   '@rolldown/binding-darwin-arm64': [ '1.2.8' ],
+17 silly audit   '@rolldown/binding-darwin-x64': [ '1.2.8' ],
+17 silly audit   '@rolldown/binding-freebsd-x64': [ '1.2.8' ],
+17 silly audit   '@rolldown/binding-linux-arm-gnueabihf': [ '1.2.8' ],
+17 silly audit   '@rolldown/binding-linux-arm64-gnu': [ '1.2.8' ],
+17 silly audit   '@rolldown/binding-linux-arm64-musl': [ '1.2.8' ],
+17 silly audit   '@rolldown/binding-linux-ppc64-gnu': [ '1.2.8' ],
+17 silly audit   '@rolldown/binding-linux-s390x-gnu': [ '1.2.8' ],
+17 silly audit   '@rolldown/binding-linux-x64-gnu': [ '1.2.8' ],
+17 silly audit   '@rolldown/binding-linux-x64-musl': [ '1.2.8' ],
+17 silly audit   '@rolldown/binding-openharmony-arm64': [ '1.2.8' ],
+17 silly audit   '@rolldown/binding-win32-arm64-msvc': [ '1.2.8' ],
+17 silly audit   '@rolldown/binding-win32-x64-msvc': [ '1.2.8' ],
+17 silly audit   '@rolldown/pluginutils': [ '1.0.1' ],
+17 silly audit   '@tailwindcss/node': [ '4.3.3' ],
+17 silly audit   lightningcss: [ '1.32.0', '1.33.0' ],
+17 silly audit   'lightningcss-android-arm64': [ '1.32.0', '1.33.0' ],
+17 silly audit   'lightningcss-darwin-arm64': [ '1.32.0', '1.33.0' ],
+17 silly audit   'lightningcss-darwin-x64': [ '1.32.0', '1.33.0' ],
+17 silly audit   'lightningcss-freebsd-x64': [ '1.32.0', '1.33.0' ],
+17 silly audit   'lightningcss-linux-arm-gnueabihf': [ '1.32.0', '1.33.0' ],
+17 silly audit   'lightningcss-linux-arm64-gnu': [ '1.32.0', '1.33.0' ],
+17 silly audit   'lightningcss-linux-arm64-musl': [ '1.32.0', '1.33.0' ],
+17 silly audit   'lightningcss-linux-x64-gnu': [ '1.32.0', '1.33.0' ],
+17 silly audit   'lightningcss-linux-x64-musl': [ '1.32.0', '1.33.0' ],
+17 silly audit   'lightningcss-win32-arm64-msvc': [ '1.32.0', '1.33.0' ],
+17 silly audit   'lightningcss-win32-x64-msvc': [ '1.32.0', '1.33.0' ],
+17 silly audit   '@tailwindcss/oxide': [ '4.3.3' ],
+17 silly audit   '@tailwindcss/oxide-android-arm64': [ '4.3.3' ],
+17 silly audit   '@tailwindcss/oxide-darwin-arm64': [ '4.3.3' ],
+17 silly audit   '@tailwindcss/oxide-darwin-x64': [ '4.3.3' ],
+17 silly audit   '@tailwindcss/oxide-freebsd-x64': [ '4.3.3' ],
+17 silly audit   '@tailwindcss/oxide-linux-arm-gnueabihf': [ '4.3.3' ],
+17 silly audit   '@tailwindcss/oxide-linux-arm64-gnu': [ '4.3.3' ],
+17 silly audit   '@tailwindcss/oxide-linux-arm64-musl': [ '4.3.3' ],
+17 silly audit   '@tailwindcss/oxide-linux-x64-gnu': [ '4.3.3' ],
+17 silly audit   '@tailwindcss/oxide-linux-x64-musl': [ '4.3.3' ],
+17 silly audit   '@tailwindcss/oxide-win32-arm64-msvc': [ '4.3.3' ],
+17 silly audit   '@tailwindcss/oxide-win32-x64-msvc': [ '4.3.3' ],
+17 silly audit   '@tailwindcss/postcss': [ '4.3.3' ],
+17 silly audit   '@types/node': [ '24.13.4' ],
+17 silly audit   '@types/react': [ '19.3.0' ],
+17 silly audit   '@types/react-dom': [ '19.3.0' ],
+17 silly audit   '@vitejs/plugin-react': [ '6.1.1' ],
+17 silly audit   autoprefixer: [ '10.5.6' ],
+17 silly audit   'baseline-browser-mapping': [ '2.11.21' ],
+17 silly audit   browserslist: [ '4.28.9' ],
+17 silly audit   'caniuse-lite': [ '1.0.30001810' ],
+17 silly audit   cookie: [ '1.1.1' ],
+17 silly audit   csstype: [ '3.2.3' ],
+17 silly audit   'detect-libc': [ '2.1.2' ],
+17 silly audit   'electron-to-chromium': [ '1.5.426' ],
+17 silly audit   'enhanced-resolve': [ '5.24.5' ],
+17 silly audit   escalade: [ '3.2.0' ],
+17 silly audit   fdir: [ '6.5.0' ],
+17 silly audit   'fraction.js': [ '5.3.4' ],
+17 silly audit   fsevents: [ '2.3.3' ],
+17 silly audit   'graceful-fs': [ '4.2.11' ],
+17 silly audit   jiti: [ '2.7.0' ],
+17 silly audit   'magic-string': [ '0.30.21' ],
+17 silly audit   nanoid: [ '3.3.18' ],
+17 silly audit   'node-releases': [ '2.0.55' ],
+17 silly audit   oxlint: [ '1.82.0' ],
+17 silly audit   picocolors: [ '1.1.1' ],
+17 silly audit   picomatch: [ '4.0.7' ],
+17 silly audit   postcss: [ '8.5.28' ],
+17 silly audit   'postcss-value-parser': [ '4.2.0' ],
+17 silly audit   react: [ '19.3.0' ],
+17 silly audit   'react-dom': [ '19.3.0' ],
+17 silly audit   'react-router': [ '7.18.3' ],
+17 silly audit   'react-router-dom': [ '7.18.3' ],
+17 silly audit   rolldown: [ '1.2.8' ],
+17 silly audit   scheduler: [ '0.28.0' ],
+17 silly audit   'set-cookie-parser': [ '2.7.2' ],
+17 silly audit   'source-map-js': [ '1.2.1' ],
+17 silly audit   tailwindcss: [ '4.3.3' ],
+17 silly audit   tapable: [ '2.3.3' ],
+17 silly audit   tinyglobby: [ '0.2.17' ],
+17 silly audit   typescript: [ '6.0.3' ],
+17 silly audit   'undici-types': [ '7.18.2' ],
+17 silly audit   'update-browserslist-db': [ '1.3.2' ],
+17 silly audit   vite: [ '8.3.0' ],
+17 silly audit   '@tailwindcss/oxide-wasm32-wasi': [ '4.3.3' ]
+17 silly audit }
+18 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\lightningcss-win32-arm64-msvc
+19 silly reify mark deleted [
+19 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\lightningcss-win32-arm64-msvc'
+19 silly reify ]
+20 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\lightningcss-linux-x64-musl
+21 silly reify mark deleted [
+21 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\lightningcss-linux-x64-musl'
+21 silly reify ]
+22 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\lightningcss-linux-x64-gnu
+23 silly reify mark deleted [
+23 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\lightningcss-linux-x64-gnu'
+23 silly reify ]
+24 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\lightningcss-linux-arm64-musl
+25 silly reify mark deleted [
+25 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\lightningcss-linux-arm64-musl'
+25 silly reify ]
+26 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\lightningcss-linux-arm64-gnu
+27 silly reify mark deleted [
+27 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\lightningcss-linux-arm64-gnu'
+27 silly reify ]
+28 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\lightningcss-linux-arm-gnueabihf
+29 silly reify mark deleted [
+29 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\lightningcss-linux-arm-gnueabihf'
+29 silly reify ]
+30 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\lightningcss-freebsd-x64
+31 silly reify mark deleted [
+31 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\lightningcss-freebsd-x64'
+31 silly reify ]
+32 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\lightningcss-darwin-x64
+33 silly reify mark deleted [
+33 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\lightningcss-darwin-x64'
+33 silly reify ]
+34 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\lightningcss-darwin-arm64
+35 silly reify mark deleted [
+35 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\lightningcss-darwin-arm64'
+35 silly reify ]
+36 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\lightningcss-android-arm64
+37 silly reify mark deleted [
+37 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\lightningcss-android-arm64'
+37 silly reify ]
+38 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\fsevents
+39 silly reify mark deleted [
+39 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\fsevents'
+39 silly reify ]
+40 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@tailwindcss\oxide-win32-arm64-msvc
+41 silly reify mark deleted [
+41 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@tailwindcss\\oxide-win32-arm64-msvc'
+41 silly reify ]
+42 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@tailwindcss\oxide-linux-x64-musl
+43 silly reify mark deleted [
+43 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@tailwindcss\\oxide-linux-x64-musl'
+43 silly reify ]
+44 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@tailwindcss\oxide-linux-x64-gnu
+45 silly reify mark deleted [
+45 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@tailwindcss\\oxide-linux-x64-gnu'
+45 silly reify ]
+46 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@tailwindcss\oxide-linux-arm64-musl
+47 silly reify mark deleted [
+47 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@tailwindcss\\oxide-linux-arm64-musl'
+47 silly reify ]
+48 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@tailwindcss\oxide-linux-arm64-gnu
+49 silly reify mark deleted [
+49 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@tailwindcss\\oxide-linux-arm64-gnu'
+49 silly reify ]
+50 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@tailwindcss\oxide-linux-arm-gnueabihf
+51 silly reify mark deleted [
+51 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@tailwindcss\\oxide-linux-arm-gnueabihf'
+51 silly reify ]
+52 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@tailwindcss\oxide-freebsd-x64
+53 silly reify mark deleted [
+53 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@tailwindcss\\oxide-freebsd-x64'
+53 silly reify ]
+54 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@tailwindcss\oxide-darwin-x64
+55 silly reify mark deleted [
+55 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@tailwindcss\\oxide-darwin-x64'
+55 silly reify ]
+56 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@tailwindcss\oxide-darwin-arm64
+57 silly reify mark deleted [
+57 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@tailwindcss\\oxide-darwin-arm64'
+57 silly reify ]
+58 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@tailwindcss\oxide-android-arm64
+59 silly reify mark deleted [
+59 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@tailwindcss\\oxide-android-arm64'
+59 silly reify ]
+60 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@tailwindcss\node\node_modules\lightningcss-win32-arm64-msvc
+61 silly reify mark deleted [
+61 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@tailwindcss\\node\\node_modules\\lightningcss-win32-arm64-msvc'
+61 silly reify ]
+62 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@tailwindcss\node\node_modules\lightningcss-linux-x64-musl
+63 silly reify mark deleted [
+63 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@tailwindcss\\node\\node_modules\\lightningcss-linux-x64-musl'
+63 silly reify ]
+64 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@tailwindcss\node\node_modules\lightningcss-linux-x64-gnu
+65 silly reify mark deleted [
+65 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@tailwindcss\\node\\node_modules\\lightningcss-linux-x64-gnu'
+65 silly reify ]
+66 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@tailwindcss\node\node_modules\lightningcss-linux-arm64-musl
+67 silly reify mark deleted [
+67 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@tailwindcss\\node\\node_modules\\lightningcss-linux-arm64-musl'
+67 silly reify ]
+68 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@tailwindcss\node\node_modules\lightningcss-linux-arm64-gnu
+69 silly reify mark deleted [
+69 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@tailwindcss\\node\\node_modules\\lightningcss-linux-arm64-gnu'
+69 silly reify ]
+70 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@tailwindcss\node\node_modules\lightningcss-linux-arm-gnueabihf
+71 silly reify mark deleted [
+71 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@tailwindcss\\node\\node_modules\\lightningcss-linux-arm-gnueabihf'
+71 silly reify ]
+72 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@tailwindcss\node\node_modules\lightningcss-freebsd-x64
+73 silly reify mark deleted [
+73 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@tailwindcss\\node\\node_modules\\lightningcss-freebsd-x64'
+73 silly reify ]
+74 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@tailwindcss\node\node_modules\lightningcss-darwin-x64
+75 silly reify mark deleted [
+75 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@tailwindcss\\node\\node_modules\\lightningcss-darwin-x64'
+75 silly reify ]
+76 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@tailwindcss\node\node_modules\lightningcss-darwin-arm64
+77 silly reify mark deleted [
+77 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@tailwindcss\\node\\node_modules\\lightningcss-darwin-arm64'
+77 silly reify ]
+78 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@tailwindcss\node\node_modules\lightningcss-android-arm64
+79 silly reify mark deleted [
+79 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@tailwindcss\\node\\node_modules\\lightningcss-android-arm64'
+79 silly reify ]
+80 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@rolldown\binding-win32-arm64-msvc
+81 silly reify mark deleted [
+81 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@rolldown\\binding-win32-arm64-msvc'
+81 silly reify ]
+82 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@rolldown\binding-openharmony-arm64
+83 silly reify mark deleted [
+83 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@rolldown\\binding-openharmony-arm64'
+83 silly reify ]
+84 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@rolldown\binding-linux-x64-musl
+85 silly reify mark deleted [
+85 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@rolldown\\binding-linux-x64-musl'
+85 silly reify ]
+86 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@rolldown\binding-linux-x64-gnu
+87 silly reify mark deleted [
+87 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@rolldown\\binding-linux-x64-gnu'
+87 silly reify ]
+88 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@rolldown\binding-linux-s390x-gnu
+89 silly reify mark deleted [
+89 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@rolldown\\binding-linux-s390x-gnu'
+89 silly reify ]
+90 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@rolldown\binding-linux-ppc64-gnu
+91 silly reify mark deleted [
+91 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@rolldown\\binding-linux-ppc64-gnu'
+91 silly reify ]
+92 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@rolldown\binding-linux-arm64-musl
+93 silly reify mark deleted [
+93 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@rolldown\\binding-linux-arm64-musl'
+93 silly reify ]
+94 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@rolldown\binding-linux-arm64-gnu
+95 silly reify mark deleted [
+95 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@rolldown\\binding-linux-arm64-gnu'
+95 silly reify ]
+96 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@rolldown\binding-linux-arm-gnueabihf
+97 silly reify mark deleted [
+97 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@rolldown\\binding-linux-arm-gnueabihf'
+97 silly reify ]
+98 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@rolldown\binding-freebsd-x64
+99 silly reify mark deleted [
+99 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@rolldown\\binding-freebsd-x64'
+99 silly reify ]
+100 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@rolldown\binding-darwin-x64
+101 silly reify mark deleted [
+101 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@rolldown\\binding-darwin-x64'
+101 silly reify ]
+102 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@rolldown\binding-darwin-arm64
+103 silly reify mark deleted [
+103 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@rolldown\\binding-darwin-arm64'
+103 silly reify ]
+104 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@rolldown\binding-android-arm64
+105 silly reify mark deleted [
+105 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@rolldown\\binding-android-arm64'
+105 silly reify ]
+106 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@rolldown\binding-android-arm-eabi
+107 silly reify mark deleted [
+107 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@rolldown\\binding-android-arm-eabi'
+107 silly reify ]
+108 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@oxlint\binding-win32-ia32-msvc
+109 silly reify mark deleted [
+109 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@oxlint\\binding-win32-ia32-msvc'
+109 silly reify ]
+110 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@oxlint\binding-win32-arm64-msvc
+111 silly reify mark deleted [
+111 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@oxlint\\binding-win32-arm64-msvc'
+111 silly reify ]
+112 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@oxlint\binding-openharmony-arm64
+113 silly reify mark deleted [
+113 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@oxlint\\binding-openharmony-arm64'
+113 silly reify ]
+114 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@oxlint\binding-linux-x64-musl
+115 silly reify mark deleted [
+115 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@oxlint\\binding-linux-x64-musl'
+115 silly reify ]
+116 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@oxlint\binding-linux-x64-gnu
+117 silly reify mark deleted [
+117 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@oxlint\\binding-linux-x64-gnu'
+117 silly reify ]
+118 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@oxlint\binding-linux-s390x-gnu
+119 silly reify mark deleted [
+119 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@oxlint\\binding-linux-s390x-gnu'
+119 silly reify ]
+120 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@oxlint\binding-linux-riscv64-musl
+121 silly reify mark deleted [
+121 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@oxlint\\binding-linux-riscv64-musl'
+121 silly reify ]
+122 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@oxlint\binding-linux-riscv64-gnu
+123 silly reify mark deleted [
+123 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@oxlint\\binding-linux-riscv64-gnu'
+123 silly reify ]
+124 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@oxlint\binding-linux-ppc64-gnu
+125 silly reify mark deleted [
+125 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@oxlint\\binding-linux-ppc64-gnu'
+125 silly reify ]
+126 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@oxlint\binding-linux-arm64-musl
+127 silly reify mark deleted [
+127 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@oxlint\\binding-linux-arm64-musl'
+127 silly reify ]
+128 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@oxlint\binding-linux-arm64-gnu
+129 silly reify mark deleted [
+129 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@oxlint\\binding-linux-arm64-gnu'
+129 silly reify ]
+130 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@oxlint\binding-linux-arm-musleabihf
+131 silly reify mark deleted [
+131 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@oxlint\\binding-linux-arm-musleabihf'
+131 silly reify ]
+132 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@oxlint\binding-linux-arm-gnueabihf
+133 silly reify mark deleted [
+133 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@oxlint\\binding-linux-arm-gnueabihf'
+133 silly reify ]
+134 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@oxlint\binding-freebsd-x64
+135 silly reify mark deleted [
+135 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@oxlint\\binding-freebsd-x64'
+135 silly reify ]
+136 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@oxlint\binding-darwin-x64
+137 silly reify mark deleted [
+137 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@oxlint\\binding-darwin-x64'
+137 silly reify ]
+138 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@oxlint\binding-darwin-arm64
+139 silly reify mark deleted [
+139 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@oxlint\\binding-darwin-arm64'
+139 silly reify ]
+140 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@oxlint\binding-android-arm64
+141 silly reify mark deleted [
+141 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@oxlint\\binding-android-arm64'
+141 silly reify ]
+142 verbose reify failed optional dependency C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend\node_modules\@oxlint\binding-android-arm-eabi
+143 silly reify mark deleted [
+143 silly reify   'C:\\Users\\kla1m3n\\Desktop\\hackaton\\re-action-\\frontend\\node_modules\\@oxlint\\binding-android-arm-eabi'
+143 silly reify ]
+144 http cache vite@https://registry.npmjs.org/vite/-/vite-8.3.0.tgz 1ms (cache hit)
+145 http cache update-browserslist-db@https://registry.npmjs.org/update-browserslist-db/-/update-browserslist-db-1.3.2.tgz 1ms (cache hit)
+146 http cache typescript@https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz 1ms (cache hit)
+147 http cache undici-types@https://registry.npmjs.org/undici-types/-/undici-types-7.18.2.tgz 0ms (cache hit)
+148 http cache tinyglobby@https://registry.npmjs.org/tinyglobby/-/tinyglobby-0.2.17.tgz 0ms (cache hit)
+149 http cache tapable@https://registry.npmjs.org/tapable/-/tapable-2.3.3.tgz 0ms (cache hit)
+150 http cache source-map-js@https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.1.tgz 0ms (cache hit)
+151 http cache scheduler@https://registry.npmjs.org/scheduler/-/scheduler-0.28.0.tgz 0ms (cache hit)
+152 http cache set-cookie-parser@https://registry.npmjs.org/set-cookie-parser/-/set-cookie-parser-2.7.2.tgz 0ms (cache hit)
+153 http cache tailwindcss@https://registry.npmjs.org/tailwindcss/-/tailwindcss-4.3.3.tgz 0ms (cache hit)
+154 http cache rolldown@https://registry.npmjs.org/rolldown/-/rolldown-1.2.8.tgz 0ms (cache hit)
+155 http cache react-router-dom@https://registry.npmjs.org/react-router-dom/-/react-router-dom-7.18.3.tgz 0ms (cache hit)
+156 http cache react@https://registry.npmjs.org/react/-/react-19.3.0.tgz 0ms (cache hit)
+157 http cache react-dom@https://registry.npmjs.org/react-dom/-/react-dom-19.3.0.tgz 0ms (cache hit)
+158 http cache react-router@https://registry.npmjs.org/react-router/-/react-router-7.18.3.tgz 0ms (cache hit)
+159 http cache postcss@https://registry.npmjs.org/postcss/-/postcss-8.5.28.tgz 0ms (cache hit)
+160 http cache picocolors@https://registry.npmjs.org/picocolors/-/picocolors-1.1.1.tgz 0ms (cache hit)
+161 http cache picomatch@https://registry.npmjs.org/picomatch/-/picomatch-4.0.7.tgz 0ms (cache hit)
+162 http cache node-releases@https://registry.npmjs.org/node-releases/-/node-releases-2.0.55.tgz 0ms (cache hit)
+163 http cache magic-string@https://registry.npmjs.org/magic-string/-/magic-string-0.30.21.tgz 0ms (cache hit)
+164 http cache oxlint@https://registry.npmjs.org/oxlint/-/oxlint-1.82.0.tgz 0ms (cache hit)
+165 http cache postcss-value-parser@https://registry.npmjs.org/postcss-value-parser/-/postcss-value-parser-4.2.0.tgz 0ms (cache hit)
+166 http cache lightningcss-win32-x64-msvc@https://registry.npmjs.org/lightningcss-win32-x64-msvc/-/lightningcss-win32-x64-msvc-1.33.0.tgz 0ms (cache hit)
+167 http cache graceful-fs@https://registry.npmjs.org/graceful-fs/-/graceful-fs-4.2.11.tgz 0ms (cache hit)
+168 http cache lightningcss@https://registry.npmjs.org/lightningcss/-/lightningcss-1.33.0.tgz 0ms (cache hit)
+169 http cache jiti@https://registry.npmjs.org/jiti/-/jiti-2.7.0.tgz 0ms (cache hit)
+170 http cache nanoid@https://registry.npmjs.org/nanoid/-/nanoid-3.3.18.tgz 0ms (cache hit)
+171 http cache fraction.js@https://registry.npmjs.org/fraction.js/-/fraction.js-5.3.4.tgz 0ms (cache hit)
+172 http cache electron-to-chromium@https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.5.426.tgz 0ms (cache hit)
+173 http cache enhanced-resolve@https://registry.npmjs.org/enhanced-resolve/-/enhanced-resolve-5.24.5.tgz 0ms (cache hit)
+174 http cache fdir@https://registry.npmjs.org/fdir/-/fdir-6.5.0.tgz 0ms (cache hit)
+175 http cache escalade@https://registry.npmjs.org/escalade/-/escalade-3.2.0.tgz 0ms (cache hit)
+176 http cache detect-libc@https://registry.npmjs.org/detect-libc/-/detect-libc-2.1.2.tgz 0ms (cache hit)
+177 http cache cookie@https://registry.npmjs.org/cookie/-/cookie-1.1.1.tgz 0ms (cache hit)
+178 http cache browserslist@https://registry.npmjs.org/browserslist/-/browserslist-4.28.9.tgz 0ms (cache hit)
+179 http cache csstype@https://registry.npmjs.org/csstype/-/csstype-3.2.3.tgz 0ms (cache hit)
+180 http cache @vitejs/plugin-react@https://registry.npmjs.org/@vitejs/plugin-react/-/plugin-react-6.1.1.tgz 0ms (cache hit)
+181 http cache baseline-browser-mapping@https://registry.npmjs.org/baseline-browser-mapping/-/baseline-browser-mapping-2.11.21.tgz 0ms (cache hit)
+182 http cache caniuse-lite@https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001810.tgz 0ms (cache hit)
+183 http cache autoprefixer@https://registry.npmjs.org/autoprefixer/-/autoprefixer-10.5.6.tgz 0ms (cache hit)
+184 http cache @types/react-dom@https://registry.npmjs.org/@types/react-dom/-/react-dom-19.3.0.tgz 0ms (cache hit)
+185 http cache @types/react@https://registry.npmjs.org/@types/react/-/react-19.3.0.tgz 0ms (cache hit)
+186 http cache @tailwindcss/postcss@https://registry.npmjs.org/@tailwindcss/postcss/-/postcss-4.3.3.tgz 0ms (cache hit)
+187 http cache @types/node@https://registry.npmjs.org/@types/node/-/node-24.13.4.tgz 0ms (cache hit)
+188 http cache @tailwindcss/oxide@https://registry.npmjs.org/@tailwindcss/oxide/-/oxide-4.3.3.tgz 0ms (cache hit)
+189 http cache @tailwindcss/node@https://registry.npmjs.org/@tailwindcss/node/-/node-4.3.3.tgz 0ms (cache hit)
+190 http cache @rolldown/pluginutils@https://registry.npmjs.org/@rolldown/pluginutils/-/pluginutils-1.0.1.tgz 0ms (cache hit)
+191 http cache @rolldown/binding-win32-x64-msvc@https://registry.npmjs.org/@rolldown/binding-win32-x64-msvc/-/binding-win32-x64-msvc-1.2.8.tgz 0ms (cache hit)
+192 http cache @tailwindcss/oxide-win32-x64-msvc@https://registry.npmjs.org/@tailwindcss/oxide-win32-x64-msvc/-/oxide-win32-x64-msvc-4.3.3.tgz 0ms (cache hit)
+193 http cache @oxc-project/types@https://registry.npmjs.org/@oxc-project/types/-/types-0.149.0.tgz 0ms (cache hit)
+194 http cache @oxlint/binding-win32-x64-msvc@https://registry.npmjs.org/@oxlint/binding-win32-x64-msvc/-/binding-win32-x64-msvc-1.82.0.tgz 0ms (cache hit)
+195 http cache @alloc/quick-lru@https://registry.npmjs.org/@alloc/quick-lru/-/quick-lru-5.3.0.tgz 0ms (cache hit)
+196 http cache @jridgewell/sourcemap-codec@https://registry.npmjs.org/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.6.0.tgz 0ms (cache hit)
+197 http cache @jridgewell/trace-mapping@https://registry.npmjs.org/@jridgewell/trace-mapping/-/trace-mapping-0.3.31.tgz 0ms (cache hit)
+198 http cache @jridgewell/remapping@https://registry.npmjs.org/@jridgewell/remapping/-/remapping-2.3.5.tgz 0ms (cache hit)
+199 http cache @jridgewell/gen-mapping@https://registry.npmjs.org/@jridgewell/gen-mapping/-/gen-mapping-0.3.13.tgz 0ms (cache hit)
+200 silly tarball no local data for vite@https://registry.npmjs.org/vite/-/vite-8.3.0.tgz. Extracting by manifest.
+201 http cache @jridgewell/resolve-uri@https://registry.npmjs.org/@jridgewell/resolve-uri/-/resolve-uri-3.1.2.tgz 0ms (cache hit)
+202 silly tarball no local data for update-browserslist-db@https://registry.npmjs.org/update-browserslist-db/-/update-browserslist-db-1.3.2.tgz. Extracting by manifest.
+203 http cache lightningcss-win32-x64-msvc@https://registry.npmjs.org/lightningcss-win32-x64-msvc/-/lightningcss-win32-x64-msvc-1.32.0.tgz 0ms (cache hit)
+204 silly tarball no local data for typescript@https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz. Extracting by manifest.
+205 http cache lightningcss@https://registry.npmjs.org/lightningcss/-/lightningcss-1.32.0.tgz 0ms (cache hit)
+206 silly tarball no local data for undici-types@https://registry.npmjs.org/undici-types/-/undici-types-7.18.2.tgz. Extracting by manifest.
+207 silly tarball no local data for tinyglobby@https://registry.npmjs.org/tinyglobby/-/tinyglobby-0.2.17.tgz. Extracting by manifest.
+208 silly tarball no local data for tapable@https://registry.npmjs.org/tapable/-/tapable-2.3.3.tgz. Extracting by manifest.
+209 silly tarball no local data for source-map-js@https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.1.tgz. Extracting by manifest.
+210 silly tarball no local data for scheduler@https://registry.npmjs.org/scheduler/-/scheduler-0.28.0.tgz. Extracting by manifest.
+211 silly tarball no local data for set-cookie-parser@https://registry.npmjs.org/set-cookie-parser/-/set-cookie-parser-2.7.2.tgz. Extracting by manifest.
+212 silly tarball no local data for tailwindcss@https://registry.npmjs.org/tailwindcss/-/tailwindcss-4.3.3.tgz. Extracting by manifest.
+213 silly tarball no local data for rolldown@https://registry.npmjs.org/rolldown/-/rolldown-1.2.8.tgz. Extracting by manifest.
+214 silly tarball no local data for react-router-dom@https://registry.npmjs.org/react-router-dom/-/react-router-dom-7.18.3.tgz. Extracting by manifest.
+215 silly tarball no local data for react@https://registry.npmjs.org/react/-/react-19.3.0.tgz. Extracting by manifest.
+216 silly tarball no local data for react-dom@https://registry.npmjs.org/react-dom/-/react-dom-19.3.0.tgz. Extracting by manifest.
+217 silly tarball no local data for react-router@https://registry.npmjs.org/react-router/-/react-router-7.18.3.tgz. Extracting by manifest.
+218 silly tarball no local data for postcss@https://registry.npmjs.org/postcss/-/postcss-8.5.28.tgz. Extracting by manifest.
+219 silly tarball no local data for picocolors@https://registry.npmjs.org/picocolors/-/picocolors-1.1.1.tgz. Extracting by manifest.
+220 silly tarball no local data for picomatch@https://registry.npmjs.org/picomatch/-/picomatch-4.0.7.tgz. Extracting by manifest.
+221 silly tarball no local data for node-releases@https://registry.npmjs.org/node-releases/-/node-releases-2.0.55.tgz. Extracting by manifest.
+222 silly tarball no local data for magic-string@https://registry.npmjs.org/magic-string/-/magic-string-0.30.21.tgz. Extracting by manifest.
+223 silly tarball no local data for oxlint@https://registry.npmjs.org/oxlint/-/oxlint-1.82.0.tgz. Extracting by manifest.
+224 silly tarball no local data for postcss-value-parser@https://registry.npmjs.org/postcss-value-parser/-/postcss-value-parser-4.2.0.tgz. Extracting by manifest.
+225 silly tarball no local data for lightningcss-win32-x64-msvc@https://registry.npmjs.org/lightningcss-win32-x64-msvc/-/lightningcss-win32-x64-msvc-1.33.0.tgz. Extracting by manifest.
+226 silly tarball no local data for graceful-fs@https://registry.npmjs.org/graceful-fs/-/graceful-fs-4.2.11.tgz. Extracting by manifest.
+227 silly tarball no local data for lightningcss@https://registry.npmjs.org/lightningcss/-/lightningcss-1.33.0.tgz. Extracting by manifest.
+228 silly tarball no local data for jiti@https://registry.npmjs.org/jiti/-/jiti-2.7.0.tgz. Extracting by manifest.
+229 silly tarball no local data for nanoid@https://registry.npmjs.org/nanoid/-/nanoid-3.3.18.tgz. Extracting by manifest.
+230 silly tarball no local data for electron-to-chromium@https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.5.426.tgz. Extracting by manifest.
+231 silly tarball no local data for enhanced-resolve@https://registry.npmjs.org/enhanced-resolve/-/enhanced-resolve-5.24.5.tgz. Extracting by manifest.
+232 silly tarball no local data for fdir@https://registry.npmjs.org/fdir/-/fdir-6.5.0.tgz. Extracting by manifest.
+233 silly tarball no local data for escalade@https://registry.npmjs.org/escalade/-/escalade-3.2.0.tgz. Extracting by manifest.
+234 silly tarball no local data for detect-libc@https://registry.npmjs.org/detect-libc/-/detect-libc-2.1.2.tgz. Extracting by manifest.
+235 silly tarball no local data for cookie@https://registry.npmjs.org/cookie/-/cookie-1.1.1.tgz. Extracting by manifest.
+236 silly tarball no local data for fraction.js@https://registry.npmjs.org/fraction.js/-/fraction.js-5.3.4.tgz. Extracting by manifest.
+237 silly tarball no local data for browserslist@https://registry.npmjs.org/browserslist/-/browserslist-4.28.9.tgz. Extracting by manifest.
+238 silly tarball no local data for csstype@https://registry.npmjs.org/csstype/-/csstype-3.2.3.tgz. Extracting by manifest.
+239 silly tarball no local data for @vitejs/plugin-react@https://registry.npmjs.org/@vitejs/plugin-react/-/plugin-react-6.1.1.tgz. Extracting by manifest.
+240 silly tarball no local data for baseline-browser-mapping@https://registry.npmjs.org/baseline-browser-mapping/-/baseline-browser-mapping-2.11.21.tgz. Extracting by manifest.
+241 silly tarball no local data for caniuse-lite@https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001810.tgz. Extracting by manifest.
+242 silly tarball no local data for autoprefixer@https://registry.npmjs.org/autoprefixer/-/autoprefixer-10.5.6.tgz. Extracting by manifest.
+243 silly tarball no local data for @types/react-dom@https://registry.npmjs.org/@types/react-dom/-/react-dom-19.3.0.tgz. Extracting by manifest.
+244 silly tarball no local data for @types/react@https://registry.npmjs.org/@types/react/-/react-19.3.0.tgz. Extracting by manifest.
+245 silly tarball no local data for @tailwindcss/postcss@https://registry.npmjs.org/@tailwindcss/postcss/-/postcss-4.3.3.tgz. Extracting by manifest.
+246 silly tarball no local data for @types/node@https://registry.npmjs.org/@types/node/-/node-24.13.4.tgz. Extracting by manifest.
+247 silly tarball no local data for @tailwindcss/oxide@https://registry.npmjs.org/@tailwindcss/oxide/-/oxide-4.3.3.tgz. Extracting by manifest.
+248 silly tarball no local data for @tailwindcss/node@https://registry.npmjs.org/@tailwindcss/node/-/node-4.3.3.tgz. Extracting by manifest.
+249 silly tarball no local data for @rolldown/pluginutils@https://registry.npmjs.org/@rolldown/pluginutils/-/pluginutils-1.0.1.tgz. Extracting by manifest.
+250 silly tarball no local data for @rolldown/binding-win32-x64-msvc@https://registry.npmjs.org/@rolldown/binding-win32-x64-msvc/-/binding-win32-x64-msvc-1.2.8.tgz. Extracting by manifest.
+251 silly tarball no local data for @tailwindcss/oxide-win32-x64-msvc@https://registry.npmjs.org/@tailwindcss/oxide-win32-x64-msvc/-/oxide-win32-x64-msvc-4.3.3.tgz. Extracting by manifest.
+252 silly tarball no local data for @oxc-project/types@https://registry.npmjs.org/@oxc-project/types/-/types-0.149.0.tgz. Extracting by manifest.
+253 silly tarball no local data for @oxlint/binding-win32-x64-msvc@https://registry.npmjs.org/@oxlint/binding-win32-x64-msvc/-/binding-win32-x64-msvc-1.82.0.tgz. Extracting by manifest.
+254 silly tarball no local data for @alloc/quick-lru@https://registry.npmjs.org/@alloc/quick-lru/-/quick-lru-5.3.0.tgz. Extracting by manifest.
+255 silly tarball no local data for @jridgewell/sourcemap-codec@https://registry.npmjs.org/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.6.0.tgz. Extracting by manifest.
+256 silly tarball no local data for @jridgewell/trace-mapping@https://registry.npmjs.org/@jridgewell/trace-mapping/-/trace-mapping-0.3.31.tgz. Extracting by manifest.
+257 silly tarball no local data for @jridgewell/remapping@https://registry.npmjs.org/@jridgewell/remapping/-/remapping-2.3.5.tgz. Extracting by manifest.
+258 silly tarball no local data for @jridgewell/gen-mapping@https://registry.npmjs.org/@jridgewell/gen-mapping/-/gen-mapping-0.3.13.tgz. Extracting by manifest.
+259 silly tarball no local data for @jridgewell/resolve-uri@https://registry.npmjs.org/@jridgewell/resolve-uri/-/resolve-uri-3.1.2.tgz. Extracting by manifest.
+260 silly tarball no local data for lightningcss-win32-x64-msvc@https://registry.npmjs.org/lightningcss-win32-x64-msvc/-/lightningcss-win32-x64-msvc-1.32.0.tgz. Extracting by manifest.
+261 silly tarball no local data for lightningcss@https://registry.npmjs.org/lightningcss/-/lightningcss-1.32.0.tgz. Extracting by manifest.
+262 http fetch GET 200 https://registry.npmjs.org/npm 890ms
+263 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 998ms
+264 silly audit report {}
+265 http fetch GET 200 https://registry.npmjs.org/set-cookie-parser/-/set-cookie-parser-2.7.2.tgz 2397ms (cache miss)
+266 http fetch GET 200 https://registry.npmjs.org/picocolors/-/picocolors-1.1.1.tgz 2437ms (cache miss)
+267 http fetch GET 200 https://registry.npmjs.org/tinyglobby/-/tinyglobby-0.2.17.tgz 2527ms (cache miss)
+268 http fetch GET 200 https://registry.npmjs.org/nanoid/-/nanoid-3.3.18.tgz 2907ms (cache miss)
+269 http fetch GET 200 https://registry.npmjs.org/update-browserslist-db/-/update-browserslist-db-1.3.2.tgz 2965ms (cache miss)
+270 http fetch GET 200 https://registry.npmjs.org/node-releases/-/node-releases-2.0.55.tgz 3147ms (cache miss)
+271 http fetch GET 200 https://registry.npmjs.org/react-router-dom/-/react-router-dom-7.18.3.tgz 3318ms (cache miss)
+272 http fetch GET 200 https://registry.npmjs.org/graceful-fs/-/graceful-fs-4.2.11.tgz 3656ms (cache miss)
+273 http fetch GET 200 https://registry.npmjs.org/cookie/-/cookie-1.1.1.tgz 3672ms (cache miss)
+274 http fetch GET 200 https://registry.npmjs.org/@tailwindcss/oxide/-/oxide-4.3.3.tgz 3969ms (cache miss)
+275 http fetch GET 200 https://registry.npmjs.org/fdir/-/fdir-6.5.0.tgz 4009ms (cache miss)
+276 http fetch GET 200 https://registry.npmjs.org/detect-libc/-/detect-libc-2.1.2.tgz 4014ms (cache miss)
+277 http fetch GET 200 https://registry.npmjs.org/@oxc-project/types/-/types-0.149.0.tgz 4039ms (cache miss)
+278 http fetch GET 200 https://registry.npmjs.org/@rolldown/pluginutils/-/pluginutils-1.0.1.tgz 4115ms (cache miss)
+279 http fetch GET 200 https://registry.npmjs.org/@alloc/quick-lru/-/quick-lru-5.3.0.tgz 4162ms (cache miss)
+280 http fetch GET 200 https://registry.npmjs.org/@vitejs/plugin-react/-/plugin-react-6.1.1.tgz 4368ms (cache miss)
+281 http fetch GET 200 https://registry.npmjs.org/scheduler/-/scheduler-0.28.0.tgz 4388ms (cache miss)
+282 http fetch GET 200 https://registry.npmjs.org/browserslist/-/browserslist-4.28.9.tgz 4405ms (cache miss)
+283 http fetch GET 200 https://registry.npmjs.org/postcss-value-parser/-/postcss-value-parser-4.2.0.tgz 4480ms (cache miss)
+284 http fetch GET 200 https://registry.npmjs.org/escalade/-/escalade-3.2.0.tgz 4533ms (cache miss)
+285 http fetch GET 200 https://registry.npmjs.org/@tailwindcss/postcss/-/postcss-4.3.3.tgz 4747ms (cache miss)
+286 http fetch GET 200 https://registry.npmjs.org/picomatch/-/picomatch-4.0.7.tgz 4918ms (cache miss)
+287 http fetch GET 200 https://registry.npmjs.org/baseline-browser-mapping/-/baseline-browser-mapping-2.11.21.tgz 5250ms (cache miss)
+288 http fetch GET 200 https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.5.426.tgz 5304ms (cache miss)
+289 http fetch GET 200 https://registry.npmjs.org/@jridgewell/resolve-uri/-/resolve-uri-3.1.2.tgz 5290ms (cache miss)
+290 http fetch GET 200 https://registry.npmjs.org/@types/react-dom/-/react-dom-19.3.0.tgz 5403ms (cache miss)
+291 http fetch GET 200 https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.1.tgz 5567ms (cache miss)
+292 http fetch GET 200 https://registry.npmjs.org/@tailwindcss/node/-/node-4.3.3.tgz 5855ms (cache miss)
+293 http fetch GET 200 https://registry.npmjs.org/magic-string/-/magic-string-0.30.21.tgz 5872ms (cache miss)
+294 http fetch GET 200 https://registry.npmjs.org/csstype/-/csstype-3.2.3.tgz 5872ms (cache miss)
+295 http fetch GET 200 https://registry.npmjs.org/tapable/-/tapable-2.3.3.tgz 5888ms (cache miss)
+296 http fetch GET 200 https://registry.npmjs.org/@types/react/-/react-19.3.0.tgz 5929ms (cache miss)
+297 http fetch GET 200 https://registry.npmjs.org/lightningcss/-/lightningcss-1.33.0.tgz 5938ms (cache miss)
+298 http fetch GET 200 https://registry.npmjs.org/fraction.js/-/fraction.js-5.3.4.tgz 5965ms (cache miss)
+299 http fetch GET 200 https://registry.npmjs.org/react/-/react-19.3.0.tgz 6011ms (cache miss)
+300 http fetch GET 200 https://registry.npmjs.org/lightningcss/-/lightningcss-1.32.0.tgz 5987ms (cache miss)
+301 http fetch GET 200 https://registry.npmjs.org/undici-types/-/undici-types-7.18.2.tgz 6168ms (cache miss)
+302 http fetch GET 200 https://registry.npmjs.org/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.6.0.tgz 6216ms (cache miss)
+303 http fetch GET 200 https://registry.npmjs.org/@jridgewell/remapping/-/remapping-2.3.5.tgz 6225ms (cache miss)
+304 http fetch GET 200 https://registry.npmjs.org/@jridgewell/gen-mapping/-/gen-mapping-0.3.13.tgz 6231ms (cache miss)
+305 http fetch GET 200 https://registry.npmjs.org/jiti/-/jiti-2.7.0.tgz 6261ms (cache miss)
+306 http fetch GET 200 https://registry.npmjs.org/tailwindcss/-/tailwindcss-4.3.3.tgz 6292ms (cache miss)
+307 http fetch GET 200 https://registry.npmjs.org/oxlint/-/oxlint-1.82.0.tgz 6310ms (cache miss)
+308 http fetch GET 200 https://registry.npmjs.org/@tailwindcss/oxide-win32-x64-msvc/-/oxide-win32-x64-msvc-4.3.3.tgz 6318ms (cache miss)
+309 http fetch GET 200 https://registry.npmjs.org/@jridgewell/trace-mapping/-/trace-mapping-0.3.31.tgz 6427ms (cache miss)
+310 http fetch GET 200 https://registry.npmjs.org/postcss/-/postcss-8.5.28.tgz 6445ms (cache miss)
+311 http fetch GET 200 https://registry.npmjs.org/rolldown/-/rolldown-1.2.8.tgz 6545ms (cache miss)
+312 http fetch GET 200 https://registry.npmjs.org/vite/-/vite-8.3.0.tgz 6557ms (cache miss)
+313 http fetch GET 200 https://registry.npmjs.org/enhanced-resolve/-/enhanced-resolve-5.24.5.tgz 6538ms (cache miss)
+314 http fetch GET 200 https://registry.npmjs.org/@types/node/-/node-24.13.4.tgz 6644ms (cache miss)
+315 http fetch GET 200 https://registry.npmjs.org/autoprefixer/-/autoprefixer-10.5.6.tgz 6695ms (cache miss)
+316 http fetch GET 200 https://registry.npmjs.org/react-dom/-/react-dom-19.3.0.tgz 6774ms (cache miss)
+317 http fetch GET 200 https://registry.npmjs.org/react-router/-/react-router-7.18.3.tgz 7105ms (cache miss)
+318 http fetch GET 200 https://registry.npmjs.org/lightningcss-win32-x64-msvc/-/lightningcss-win32-x64-msvc-1.33.0.tgz 7332ms (cache miss)
+319 http fetch GET 200 https://registry.npmjs.org/lightningcss-win32-x64-msvc/-/lightningcss-win32-x64-msvc-1.32.0.tgz 7752ms (cache miss)
+320 http fetch GET 200 https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz 7788ms (cache miss)
+321 http fetch GET 200 https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001810.tgz 8380ms (cache miss)
+322 http fetch GET 200 https://registry.npmjs.org/@oxlint/binding-win32-x64-msvc/-/binding-win32-x64-msvc-1.82.0.tgz 8676ms (cache miss)
+323 http fetch GET 200 https://registry.npmjs.org/@rolldown/binding-win32-x64-msvc/-/binding-win32-x64-msvc-1.2.8.tgz 9033ms (cache miss)
+324 silly ADD node_modules/vite
+325 silly ADD node_modules/update-browserslist-db
+326 silly ADD node_modules/undici-types
+327 silly ADD node_modules/typescript
+328 silly ADD node_modules/tinyglobby
+329 silly ADD node_modules/tapable
+330 silly ADD node_modules/tailwindcss
+331 silly ADD node_modules/source-map-js
+332 silly ADD node_modules/set-cookie-parser
+333 silly ADD node_modules/scheduler
+334 silly ADD node_modules/rolldown
+335 silly ADD node_modules/react-router-dom
+336 silly ADD node_modules/react-router
+337 silly ADD node_modules/react-dom
+338 silly ADD node_modules/react
+339 silly ADD node_modules/postcss-value-parser
+340 silly ADD node_modules/postcss
+341 silly ADD node_modules/picomatch
+342 silly ADD node_modules/picocolors
+343 silly ADD node_modules/oxlint
+344 silly ADD node_modules/node-releases
+345 silly ADD node_modules/nanoid
+346 silly ADD node_modules/magic-string
+347 silly ADD node_modules/lightningcss-win32-x64-msvc
+348 silly ADD
+349 silly ADD
+350 silly ADD
+351 silly ADD
+352 silly ADD
+353 silly ADD
+354 silly ADD
+355 silly ADD
+356 silly ADD
+357 silly ADD
+358 silly ADD node_modules/lightningcss
+359 silly ADD node_modules/jiti
+360 silly ADD node_modules/graceful-fs
+361 silly ADD
+362 silly ADD node_modules/fraction.js
+363 silly ADD node_modules/fdir
+364 silly ADD node_modules/escalade
+365 silly ADD node_modules/enhanced-resolve
+366 silly ADD node_modules/electron-to-chromium
+367 silly ADD node_modules/detect-libc
+368 silly ADD node_modules/csstype
+369 silly ADD node_modules/cookie
+370 silly ADD node_modules/caniuse-lite
+371 silly ADD node_modules/browserslist
+372 silly ADD node_modules/baseline-browser-mapping
+373 silly ADD node_modules/autoprefixer
+374 silly ADD node_modules/@vitejs/plugin-react
+375 silly ADD node_modules/@types/react-dom
+376 silly ADD node_modules/@types/react
+377 silly ADD node_modules/@types/node
+378 silly ADD node_modules/@tailwindcss/postcss
+379 silly ADD node_modules/@tailwindcss/oxide-win32-x64-msvc
+380 silly ADD
+381 silly ADD
+382 silly ADD
+383 silly ADD
+384 silly ADD
+385 silly ADD
+386 silly ADD
+387 silly ADD
+388 silly ADD
+389 silly ADD
+390 silly ADD
+391 silly ADD node_modules/@tailwindcss/oxide
+392 silly ADD node_modules/@tailwindcss/node
+393 silly ADD node_modules/@tailwindcss/node/node_modules/lightningcss-win32-x64-msvc
+394 silly ADD
+395 silly ADD
+396 silly ADD
+397 silly ADD
+398 silly ADD
+399 silly ADD
+400 silly ADD
+401 silly ADD
+402 silly ADD
+403 silly ADD
+404 silly ADD node_modules/@tailwindcss/node/node_modules/lightningcss
+405 silly ADD node_modules/@rolldown/pluginutils
+406 silly ADD node_modules/@rolldown/binding-win32-x64-msvc
+407 silly ADD
+408 silly ADD
+409 silly ADD
+410 silly ADD
+411 silly ADD
+412 silly ADD
+413 silly ADD
+414 silly ADD
+415 silly ADD
+416 silly ADD
+417 silly ADD
+418 silly ADD
+419 silly ADD
+420 silly ADD
+421 silly ADD node_modules/@oxlint/binding-win32-x64-msvc
+422 silly ADD
+423 silly ADD
+424 silly ADD
+425 silly ADD
+426 silly ADD
+427 silly ADD
+428 silly ADD
+429 silly ADD
+430 silly ADD
+431 silly ADD
+432 silly ADD
+433 silly ADD
+434 silly ADD
+435 silly ADD
+436 silly ADD
+437 silly ADD
+438 silly ADD
+439 silly ADD
+440 silly ADD node_modules/@oxc-project/types
+441 silly ADD node_modules/@jridgewell/trace-mapping
+442 silly ADD node_modules/@jridgewell/sourcemap-codec
+443 silly ADD node_modules/@jridgewell/resolve-uri
+444 silly ADD node_modules/@jridgewell/remapping
+445 silly ADD node_modules/@jridgewell/gen-mapping
+446 silly ADD node_modules/@alloc/quick-lru
+447 verbose cwd C:\Users\kla1m3n\Desktop\hackaton\re-action-\frontend
+448 verbose os Windows_NT 10.0.26200
+449 verbose node v22.23.1
+450 verbose npm  v10.9.8
+451 notice
+451 notice New major version of npm available! 10.9.8 -> 12.0.2
+451 notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+451 notice To update run: npm install -g npm@12.0.2
+451 notice  { force: true, [Symbol(proc-log.meta)]: true }
+452 verbose exit 0
+453 info ok
