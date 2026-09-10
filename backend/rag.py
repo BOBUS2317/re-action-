@@ -11,7 +11,7 @@ GIGACHAT_CREDENTIALS = os.getenv("GIGACHAT_CREDENTIALS", "")
 giga_client = GigaChat(
     credentials=GIGACHAT_CREDENTIALS, 
     verify_ssl_certs=False, 
-    scope="GIGACHAT_API_CORP" # Или PERS, в зависимости от того, что заработало
+    scope="GIGACHAT_API_PERS"
 )
 
 print("Загрузка модели эмбеддингов rubert-tiny2...")
