@@ -85,7 +85,7 @@ function Bubble({ msg, userInitials }: { msg: Message; userInitials: string }) {
       <div className={`max-w-[520px] ${isUser ? "items-end flex flex-col" : ""}`}>
         {isOperator && (
           <p className="text-[11px] font-semibold text-emerald-700 mb-1 px-1">
-            Алексей · Оператор
+            Михаил Литвин · Оператор
           </p>
         )}
         <div
