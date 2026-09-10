@@ -265,16 +265,18 @@ def handle_support(req: SupportRequest):
 
     if emergency:
         response_text = EMERGENCY_RESPONSE
-        category = first["category"] if first else "other"
-        category_name = first["category_name"] if first else "Аварийная ситуация"
-        confidence = 1.0
+        ...
+    elif not context:
+        response_text = fallback_answer(context)
+        confidence = 0.35
+        llm_used = False
     else:
         try:
             response_text = ask_qwen(req.message, context, previous_messages)
             llm_used = True
         except (requests.RequestException, KeyError, IndexError, TypeError):
             response_text = fallback_answer(context)
-        confidence = 0.9 if context else 0.35
+
 
     if "[ТРЕБУЕТСЯ_ЭСКАЛАЦИЯ]" in response_text:
         escalated = True
