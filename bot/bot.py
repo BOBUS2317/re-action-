@@ -162,15 +162,15 @@ async def api_post(path: str, payload: dict):
 async def start(message: types.Message, state: FSMContext):
     await state.clear()
     await message.answer(
-        "привет! я помощник «ре:акция» — вода, свет, лифт, квитанции, заявки\n\n"
-        "просто напиши что случилось своими словами, например:\n"
-        "«нет горячей воды» или «застрял в лифте»\n\n"
-        "если пахнет газом, дым или кого-то зажало — сразу звони 112, а потом пиши сюда\n\n"
-        "чтобы сайт и бот знали тебя как одного человека:\n"
-        "1. отправь /register и ответь на 5 вопросов (телефон, город, улица, дом, квартира)\n"
-        "2. бот выдаст 6-значный код на 15 минут\n"
-        "3. введи код на сайте в Профиле или на странице /login\n\n"
-        "новый код в любой момент — команда /link",
+        "Здравствуйте. Я — сервис «Ре:Акция» для обращений по жилищно-коммунальным услугам: водоснабжение, электроснабжение, лифтовое оборудование, квитанции и заявки.\n\n"
+        "Опишите проблему своими словами в одном сообщении, например:\n"
+        "«Отсутствует горячее водоснабжение» или «Лифт не работает».\n\n"
+        "В случае аварийной ситуации — запах газа, задымление, угроза жизни или здоровью — незамедлительно звоните по номеру 112, после чего сообщите об этом здесь.\n\n"
+        "Для объединения учётных записей сайта и Telegram:\n"
+        "1. Выполните команду /register и укажите телефон, город, улицу, дом и квартиру.\n"
+        "2. Вы получите шестизначный код, действительный в течение 15 минут.\n"
+        "3. Введите код на сайте в разделе «Профиль» или на странице /login.\n\n"
+        "Повторный код — команда /link",
         reply_markup=main_kb(),
     )
 
@@ -180,8 +180,8 @@ async def register_start(message: types.Message, state: FSMContext):
     await state.clear()
     await state.set_state(RegForm.phone)
     await message.answer(
-        "давай привяжем тебя: нужен телефон, город, улица, дом и квартира.\n\n"
-        "пришли номер телефона текстом или кнопкой ниже",
+        "Для привязки учётной записи укажите телефон, город, улицу, дом и квартиру.\n\n"
+        "Направьте номер телефона текстовым сообщением или нажмите кнопку ниже",
         reply_markup=phone_kb(),
     )
 
@@ -196,19 +196,19 @@ async def link_cmd(message: types.Message):
     except httpx.HTTPStatusError as e:
         if e.response.status_code == 404:
             await message.answer(
-                "ты ещё не зарегистрирован. отправь /register — займёт минуту",
+                "Вы не зарегистрированы. Выполните команду /register — процедура займёт около минуты.",
                 reply_markup=main_kb(),
             )
             return
-        await message.answer("не смог выдать код, попробуй позже")
+        await message.answer("Не удалось выдать код. Повторите попытку позже.")
         return
     except httpx.HTTPError:
-        await message.answer("сервис недоступен, попробуй позже")
+        await message.answer("Сервис временно недоступен. Повторите попытку позже.")
         return
     code = data.get("link_code", "")
     await message.answer(
-        f"твой код для сайта: {code}\n"
-        "действует 15 минут. введи его на сайте в Профиле или на странице /login",
+        f"Ваш код для входа на сайт: {code}\n"
+        "Срок действия — 15 минут. Введите его на сайте в разделе «Профиль» или на странице /login",
         reply_markup=main_kb(),
     )
 
@@ -222,18 +222,18 @@ async def profile_cmd(message: types.Message):
         prof = await api_get(f"/api/telegram/{tid}/profile")
     except httpx.HTTPStatusError as e:
         if e.response.status_code == 404:
-            await message.answer("профиль не найден. отправь /register")
+            await message.answer("Профиль не найден. Выполните команду /register.")
             return
-        await message.answer("не смог открыть профиль, попробуй позже")
+        await message.answer("Не удалось открыть профиль. Повторите попытку позже.")
         return
     except httpx.HTTPError:
-        await message.answer("сервис недоступен, попробуй позже")
+        await message.answer("Сервис временно недоступен. Повторите попытку позже.")
         return
     await message.answer(
-        f"ты: {prof.get('display_name', '')} ({prof.get('telegram_username') or 'без ника'})\n"
-        f"адрес: {prof.get('city', '')}, {prof.get('street', '')} {prof.get('house', '')}, кв. {prof.get('apartment') or '—'}\n"
-        f"телефон: {prof.get('phone', '')}\n\n"
-        "новый код для сайта — команда /link",
+        f"Зарегистрированный пользователь: {prof.get('display_name', '')} ({prof.get('telegram_username') or 'без ника'})\n"
+        f"Адрес: {prof.get('city', '')}, {prof.get('street', '')} {prof.get('house', '')}, кв. {prof.get('apartment') or '—'}\n"
+        f"Телефон: {prof.get('phone', '')}\n\n"
+        "Новый код для сайта — команда /link",
         reply_markup=main_kb(),
     )
 
@@ -248,46 +248,46 @@ async def reg_phone(message: types.Message, state: FSMContext):
     digits = "".join(ch for ch in phone if ch.isdigit())
     if len(digits) < 7:
         await message.answer(
-            "номер слишком короткий. пришли телефон текстом, например +7 913 123-45-67",
+            "Номер указан некорректно. Направьте телефон текстовым сообщением, например +7 913 123-45-67.",
             reply_markup=phone_kb(),
         )
         return
     await state.update_data(phone=phone)
     await state.set_state(RegForm.city)
-    await message.answer("понял. какой город? (например Томск)", reply_markup=cancel_kb())
+    await message.answer("Укажите город. Например: Томск.", reply_markup=cancel_kb())
 
 
 @dp.message(RegForm.city)
 async def reg_city(message: types.Message, state: FSMContext):
     city = (message.text or "").strip()
     if len(city) < 2:
-        await message.answer("напиши город полностью, например Томск")
+        await message.answer("Укажите название города полностью. Например: Томск.")
         return
     await state.update_data(city=city)
     await state.set_state(RegForm.street)
-    await message.answer("какая улица? (например ул. Ленина)")
+    await message.answer("Укажите улицу. Например: ул. Ленина.")
 
 
 @dp.message(RegForm.street)
 async def reg_street(message: types.Message, state: FSMContext):
     street = (message.text or "").strip()
     if len(street) < 2:
-        await message.answer("напиши улицу полностью")
+        await message.answer("Укажите название улицы полностью.")
         return
     await state.update_data(street=street)
     await state.set_state(RegForm.house)
-    await message.answer("номер дома?")
+    await message.answer("Укажите номер дома.")
 
 
 @dp.message(RegForm.house)
 async def reg_house(message: types.Message, state: FSMContext):
     house = (message.text or "").strip()
     if not house:
-        await message.answer("напиши номер дома")
+        await message.answer("Укажите номер дома.")
         return
     await state.update_data(house=house)
     await state.set_state(RegForm.apartment)
-    await message.answer("номер квартиры? если частный дом — отправь «-»")
+    await message.answer("Укажите номер квартиры. Для частного дома отправьте «-».")
 
 
 @dp.message(RegForm.apartment)
@@ -309,7 +309,7 @@ async def reg_apartment(message: types.Message, state: FSMContext):
         "apartment": apartment,
     }
     await state.clear()
-    waiting = await message.answer("сохраняю…", reply_markup=main_kb())
+    waiting = await message.answer("Сохранение данных…", reply_markup=main_kb())
     try:
         result = await api_post("/api/telegram/register", payload)
     except httpx.HTTPStatusError as e:
@@ -317,17 +317,17 @@ async def reg_apartment(message: types.Message, state: FSMContext):
             detail = e.response.json()
         except ValueError:
             detail = e.response.text
-        await waiting.edit_text(f"не получилось сохранить: {detail}. попробуй /register ещё раз")
+        await waiting.edit_text(f"Не удалось сохранить данные: {detail}. Повторите попытку командой /register.")
         return
     except httpx.HTTPError:
-        await waiting.edit_text("сервис недоступен, попробуй позже")
+        await waiting.edit_text("Сервис временно недоступен. Повторите попытку позже.")
         return
     code = result.get("link_code", "")
     await waiting.edit_text(
-        "готово! я тебя запомнил.\n\n"
-        f"твой код для сайта: {code}\n"
-        "действует 15 минут — введи его на сайте в Профиле или на странице /login.\n"
-        "после этого сайт и бот будут знать тебя как одного человека с общей историей.",
+        "Регистрация завершена.\n\n"
+        f"Ваш код для сайта: {code}\n"
+        "Срок действия — 15 минут. Введите его на сайте в разделе «Профиль» или на странице /login.\n"
+        "После этого сайт и Telegram-бот будут использовать общую учётную запись и историю обращений.",
     )
 
 
@@ -335,7 +335,7 @@ async def reg_apartment(message: types.Message, state: FSMContext):
 @dp.message(F.text == "❌ отмена")
 async def cancel(message: types.Message, state: FSMContext):
     await state.clear()
-    await message.answer("хорошо, отменил. чем помочь?", reply_markup=main_kb())
+    await message.answer("Действие отменено. Чем могу помочь?", reply_markup=main_kb())
 
 
 @dp.message(Command("new"))
@@ -346,7 +346,7 @@ async def new_dialog(message: types.Message, state: FSMContext):
         conversations.pop(message.from_user.id, None)
         last_support.pop(message.from_user.id, None)
     await message.answer(
-        "начинаем с чистого листа. опиши что произошло — где и что не так",
+        "Начат новый диалог. Опишите проблему: укажите адрес и суть неисправности.",
         reply_markup=main_kb(),
     )
 
@@ -354,14 +354,14 @@ async def new_dialog(message: types.Message, state: FSMContext):
 @dp.message(F.text == "📝 мои заявки")
 async def my_tickets(message: types.Message):
     uid = user_id_of(message)
-    waiting = await message.answer("смотрю твои заявки…")
+    waiting = await message.answer("Запрашиваю Ваши заявки…")
     try:
         tickets = await api_get(f"/api/users/{uid}/tickets", {"limit": 5})
     except httpx.HTTPError:
-        await waiting.edit_text("не смог открыть заявки, попробуй позже")
+        await waiting.edit_text("Не удалось открыть список заявок. Повторите попытку позже.")
         return
     if not tickets:
-        await waiting.edit_text("заявок пока нет. опиши проблему — и я её заведу")
+        await waiting.edit_text("Заявки отсутствуют. Опишите проблему — будет создана новая заявка.")
         return
     lines = []
     for t in tickets:
@@ -370,20 +370,20 @@ async def my_tickets(message: types.Message):
             f"• {t.get('id')} — {t.get('title', 'без названия')}\n"
             f"  статус: {status}"
         )
-    await waiting.edit_text("твои последние заявки:\n\n" + "\n\n".join(lines))
+    await waiting.edit_text("Ваши последние заявки:\n\n" + "\n\n".join(lines))
 
 
 @dp.message(F.text == "🧾 квитанции")
 async def my_receipts(message: types.Message):
     uid = user_id_of(message)
-    waiting = await message.answer("проверяю квитанции…")
+    waiting = await message.answer("Запрашиваю квитанции…")
     try:
         receipts = await api_get(f"/api/users/{uid}/receipts", {"limit": 5})
     except httpx.HTTPError:
-        await waiting.edit_text("не смог открыть квитанции, попробуй позже")
+        await waiting.edit_text("Не удалось открыть квитанции. Повторите попытку позже.")
         return
     if not receipts:
-        await waiting.edit_text("квитанций на тебя пока нет")
+        await waiting.edit_text("Квитанции на Ваше имя отсутствуют.")
         return
     lines = []
     for r in receipts:
@@ -393,30 +393,30 @@ async def my_receipts(message: types.Message):
             f"• {r.get('billing_period')} — {r.get('provider')}\n"
             f"  {amount:.2f} ₽ · {st}"
         )
-    await waiting.edit_text("последние квитанции:\n\n" + "\n\n".join(lines))
+    await waiting.edit_text("Последние квитанции:\n\n" + "\n\n".join(lines))
 
 
 @dp.message(F.text == "📢 объявления")
 async def announcements(message: types.Message):
-    waiting = await message.answer("смотрю объявления в доме…")
+    waiting = await message.answer("Запрашиваю объявления…")
     try:
         items = await api_get("/api/announcements", {"city": "Томск"})
     except httpx.HTTPError:
-        await waiting.edit_text("не смог открыть объявления, попробуй позже")
+        await waiting.edit_text("Не удалось открыть объявления. Повторите попытку позже.")
         return
     if not items:
-        await waiting.edit_text("активных объявлений сейчас нет")
+        await waiting.edit_text("Активные объявления отсутствуют.")
         return
     lines = [f"• {a.get('title', '')}\n  {(a.get('body') or '')[:200]}" for a in items[:5]]
-    await waiting.edit_text("что происходит в доме:\n\n" + "\n\n".join(lines))
+    await waiting.edit_text("Объявления:\n\n" + "\n\n".join(lines))
 
 
 @dp.message(F.text == "⭐ оценить помощь")
 async def ask_rating(message: types.Message):
     if not message.from_user or message.from_user.id not in last_support:
-        await message.answer("пока нечего оценивать — сначала опиши проблему, а потом поставь оценку")
+        await message.answer("Оценивать пока нечего. Сначала опишите проблему, после чего Вы сможете оценить ответ.")
         return
-    await message.answer("как тебе последний ответ? нажми цифру", reply_markup=rate_kb())
+    await message.answer("Оцените последний ответ, нажав на цифру:", reply_markup=rate_kb())
 
 
 @dp.callback_query(F.data.startswith("rate:"))
@@ -427,7 +427,7 @@ async def save_rating(callback: types.CallbackQuery):
     uid = f"telegram-{callback.from_user.id}"
     data = last_support.get(callback.from_user.id, {})
     if not data.get("conversation_id") and not data.get("ticket_id"):
-        await callback.answer("нечего оценивать", show_alert=True)
+        await callback.answer("Нет данных для оценки.", show_alert=True)
         return
     try:
         await api_post("/api/ratings", {
@@ -437,9 +437,9 @@ async def save_rating(callback: types.CallbackQuery):
             "ticket_id": data.get("ticket_id"),
         })
     except httpx.HTTPError:
-        await callback.answer("не сохранилось, попробуй позже", show_alert=True)
+        await callback.answer("Не удалось сохранить оценку. Повторите попытку позже.", show_alert=True)
         return
-    await callback.message.edit_text(f"спасибо! поставил {score} из 5")
+    await callback.message.edit_text(f"Спасибо. Оценка {score} из 5 сохранена.")
     await callback.answer()
 
 
@@ -448,17 +448,17 @@ async def save_rating(callback: types.CallbackQuery):
 @dp.message(F.text == "💡 передать показания")
 async def meter_start(message: types.Message, state: FSMContext):
     await state.set_state(MeterForm.resource)
-    await message.answer("что передаём?", reply_markup=resource_kb())
+    await message.answer("Укажите ресурс для передачи показаний:", reply_markup=resource_kb())
 
 
 @dp.message(MeterForm.resource)
 async def meter_resource(message: types.Message, state: FSMContext):
     if not message.text or message.text not in RESOURCE_BY_TEXT:
-        await message.answer("выбери кнопкой: холодная вода, горячая вода, электричество или газ")
+        await message.answer("Выберите ресурс с помощью кнопок: холодная вода, горячая вода, электричество или газ.")
         return
     await state.update_data(resource=RESOURCE_BY_TEXT[message.text])
     await state.set_state(MeterForm.value)
-    await message.answer("какое число на счётчике? просто цифру, например 123.5", reply_markup=cancel_kb())
+    await message.answer("Укажите текущее показание счётчика. Только цифру, например 123.5.", reply_markup=cancel_kb())
 
 
 @dp.message(MeterForm.value)
@@ -468,31 +468,31 @@ async def meter_value(message: types.Message, state: FSMContext):
         if value < 0 or value > 1_000_000:
             raise ValueError
     except ValueError:
-        await message.answer("не похоже на показание. введи просто цифру, например 123.5")
+        await message.answer("Показание указано некорректно. Введите цифру, например 123.5.")
         return
     await state.update_data(value=value)
     await state.set_state(MeterForm.street)
-    await message.answer("какая улица? например: ленина", reply_markup=cancel_kb())
+    await message.answer("Укажите улицу. Например: Ленина.", reply_markup=cancel_kb())
 
 
 @dp.message(MeterForm.street)
 async def meter_street(message: types.Message, state: FSMContext):
     if not message.text or len(message.text.strip()) < 2:
-        await message.answer("напиши улицу текстом")
+        await message.answer("Укажите улицу текстом.")
         return
     await state.update_data(street=message.text.strip())
     await state.set_state(MeterForm.house)
-    await message.answer("дом? например: 12а")
+    await message.answer("Укажите дом. Например: 12а.")
 
 
 @dp.message(MeterForm.house)
 async def meter_house(message: types.Message, state: FSMContext):
     if not message.text or len(message.text.strip()) < 1:
-        await message.answer("напиши дом")
+        await message.answer("Укажите дом.")
         return
     await state.update_data(house=message.text.strip())
     await state.set_state(MeterForm.apartment)
-    await message.answer("квартира? если частный дом или не важно — отправь «-»")
+    await message.answer("Укажите квартиру. Для частного дома или если не требуется — отправьте «-».")
 
 
 @dp.message(MeterForm.apartment)
@@ -501,7 +501,7 @@ async def meter_apartment(message: types.Message, state: FSMContext):
     apt = (message.text or "").strip()
     apartment = None if apt == "-" else apt
     uid = user_id_of(message)
-    waiting = await message.answer("сохраняю…", reply_markup=main_kb())
+    waiting = await message.answer("Сохранение показаний…", reply_markup=main_kb())
     try:
         address = await api_post(f"/api/users/{uid}/addresses", {
             "street": data["street"],
@@ -517,13 +517,13 @@ async def meter_apartment(message: types.Message, state: FSMContext):
             "measured_at": datetime.now(timezone.utc).isoformat(),
         })
     except httpx.HTTPError:
-        await waiting.edit_text("не сохранилось, попробуй позже")
+        await waiting.edit_text("Не удалось сохранить данные. Повторите попытку позже.")
         await state.clear()
         return
     await state.clear()
     await waiting.edit_text(
-        f"готово! {RESOURCE_NAMES[data['resource']]} — {reading['value']}\n"
-        f"адрес: {data['street']}, {data['house']}"
+        f"Показания сохранены: {RESOURCE_NAMES[data['resource']]} — {reading['value']}\n"
+        f"Адрес: {data['street']}, {data['house']}"
         + (f", кв. {apartment}" if apartment else "")
     )
 
@@ -533,27 +533,27 @@ async def meter_apartment(message: types.Message, state: FSMContext):
 @dp.message(F.text == "🏠 мой адрес")
 async def address_start(message: types.Message, state: FSMContext):
     await state.set_state(AddressForm.street)
-    await message.answer("какая улица?", reply_markup=cancel_kb())
+    await message.answer("Укажите улицу:", reply_markup=cancel_kb())
 
 
 @dp.message(AddressForm.street)
 async def address_street(message: types.Message, state: FSMContext):
     if not message.text or len(message.text.strip()) < 2:
-        await message.answer("напиши улицу текстом")
+        await message.answer("Укажите улицу текстом.")
         return
     await state.update_data(street=message.text.strip())
     await state.set_state(AddressForm.house)
-    await message.answer("дом?")
+    await message.answer("Укажите дом:")
 
 
 @dp.message(AddressForm.house)
 async def address_house(message: types.Message, state: FSMContext):
     if not message.text:
-        await message.answer("напиши дом")
+        await message.answer("Укажите дом.")
         return
     await state.update_data(house=message.text.strip())
     await state.set_state(AddressForm.apartment)
-    await message.answer("квартира? если не важно — отправь «-»")
+    await message.answer("Укажите квартиру. Если не требуется — отправьте «-».")
 
 
 @dp.message(AddressForm.apartment)
@@ -570,11 +570,11 @@ async def address_finish(message: types.Message, state: FSMContext):
             "city": "Томск",
         })
     except httpx.HTTPError:
-        await message.answer("не сохранилось, попробуй позже", reply_markup=main_kb())
+        await message.answer("Не удалось сохранить адрес. Повторите попытку позже.", reply_markup=main_kb())
         await state.clear()
         return
     await state.clear()
-    await message.answer("адрес сохранил ✔", reply_markup=main_kb())
+    await message.answer("Адрес сохранён.", reply_markup=main_kb())
 
 
 # ---------- заявка вручную ----------
@@ -586,7 +586,7 @@ async def ticket_start(message: types.Message, state: FSMContext):
     try:
         cats = await api_get("/api/categories")
     except httpx.HTTPError:
-        await message.answer("не смог загрузить категории, опиши проблему текстом — разберусь так")
+        await message.answer("Не удалось загрузить категории. Опишите проблему текстом — обращение будет обработано.")
         return
     mapping = {c["name"]: c["slug"] for c in cats}
     cats_cache[message.from_user.id] = mapping
@@ -595,7 +595,7 @@ async def ticket_start(message: types.Message, state: FSMContext):
         resize_keyboard=True,
     )
     await state.set_state(TicketForm.category)
-    await message.answer("что за проблема? выбери категорию", reply_markup=kb)
+    await message.answer("Укажите категорию проблемы:", reply_markup=kb)
 
 
 @dp.message(TicketForm.category)
@@ -604,28 +604,28 @@ async def ticket_category(message: types.Message, state: FSMContext):
         return
     mapping = cats_cache.get(message.from_user.id, {})
     if message.text not in mapping:
-        await message.answer("выбери категорию кнопкой")
+        await message.answer("Выберите категорию с помощью кнопок.")
         return
     await state.update_data(category=mapping[message.text])
     await state.set_state(TicketForm.title)
-    await message.answer("коротко назови заявку, например: «нет горячей воды»", reply_markup=cancel_kb())
+    await message.answer("Укажите краткое название заявки, например: «Отсутствует горячее водоснабжение».", reply_markup=cancel_kb())
 
 
 @dp.message(TicketForm.title)
 async def ticket_title(message: types.Message, state: FSMContext):
     if not message.text or len(message.text.strip()) < 3:
-        await message.answer("название слишком короткое, напиши чуть подробнее")
+        await message.answer("Название слишком короткое. Уточните формулировку.")
         return
     await state.update_data(title=message.text.strip())
     await state.set_state(TicketForm.description)
-    await message.answer("а теперь подробнее: где и что случилось?")
+    await message.answer("Опишите проблему подробно: адрес и суть неисправности.")
 
 
 @dp.message(TicketForm.description)
 async def ticket_finish(message: types.Message, state: FSMContext):
     data = await state.get_data()
     uid = user_id_of(message)
-    waiting = await message.answer("создаю заявку…", reply_markup=main_kb())
+    waiting = await message.answer("Создаю заявку…", reply_markup=main_kb())
     try:
         ticket = await api_post("/api/tickets", {
             "user_id": uid,
@@ -636,25 +636,25 @@ async def ticket_finish(message: types.Message, state: FSMContext):
             "priority": "normal",
         })
     except httpx.HTTPError:
-        await waiting.edit_text("не создалось, попробуй позже")
+        await waiting.edit_text("Не удалось создать заявку. Повторите попытку позже.")
         await state.clear()
         return
     await state.clear()
-    await waiting.edit_text(f"заявка {ticket['id']} создана, диспетчер её видит")
+    await waiting.edit_text(f"Заявка {ticket['id']} создана. Диспетчер уведомлён.")
 
 
 # ---------- свободный текст → нейронка ----------
 
 @dp.message(F.text == "🆘 описать проблему")
 async def prompt_problem(message: types.Message):
-    await message.answer("слушаю. напиши где и что случилось, одним сообщением")
+    await message.answer("Опишите проблему. Укажите адрес и суть неисправности в одном сообщении.")
 
 
 @dp.message(F.text)
 async def support(message: types.Message):
     if not message.from_user or not message.text:
         return
-    waiting = await message.answer("ищу ответ в базе знаний…")
+    waiting = await message.answer("Обрабатываю запрос. Поиск информации в базе знаний…")
     payload = {
         "user_id": f"telegram-{message.from_user.id}",
         "message": message.text,
@@ -669,7 +669,7 @@ async def support(message: types.Message):
         result = response.json()
     except (httpx.HTTPError, ValueError):
         await waiting.edit_text(
-            "сервис временно недоступен. попробуй позже, а при аварии звони 112"
+            "Сервис временно недоступен. Повторите попытку позже. В случае аварии звоните по номеру 112."
         )
         return
 
@@ -677,7 +677,7 @@ async def support(message: types.Message):
     if conv_id:
         conversations[message.from_user.id] = conv_id
 
-    text = (result.get("response") or "не смог ответить, попробуй переформулировать").strip()
+    text = (result.get("response") or "Не удалось подготовить ответ. Уточните формулировку.").strip()
     ticket_id = result.get("ticket_id")
     try:
         confidence = float(result.get("confidence") or 0)
@@ -685,9 +685,9 @@ async def support(message: types.Message):
         confidence = 0
 
     if ticket_id:
-        text += f"\n\nзаявка {ticket_id} создана, диспетчер её видит"
+        text += f"\n\nЗаявка {ticket_id} создана. Диспетчер уведомлён."
     elif result.get("escalated"):
-        text += "\n\nпередала диспетчеру, он разберётся"
+        text += "\n\nОбращение передано диспетчеру для рассмотрения."
 
     if ticket_id or confidence >= 0.6:
         last_support[message.from_user.id] = {
@@ -704,12 +704,12 @@ async def main():
     bot = Bot(token=TOKEN)
     try:
         await bot.set_my_commands([
-            types.BotCommand(command="start", description="начать"),
-            types.BotCommand(command="register", description="регистрация и код для сайта"),
-            types.BotCommand(command="link", description="новый код для входа на сайт"),
-            types.BotCommand(command="profile", description="мой профиль"),
-            types.BotCommand(command="new", description="новый диалог"),
-            types.BotCommand(command="cancel", description="отмена"),
+            types.BotCommand(command="start", description="Начать работу"),
+            types.BotCommand(command="register", description="Регистрация и код для сайта"),
+            types.BotCommand(command="link", description="Новый код для входа на сайт"),
+            types.BotCommand(command="profile", description="Мой профиль"),
+            types.BotCommand(command="new", description="Новый диалог"),
+            types.BotCommand(command="cancel", description="Отмена"),
         ])
     except Exception:
         pass
