@@ -26,10 +26,13 @@ from database import (
     list_announcements,
     list_categories,
     list_organizations,
+    ensure_demo_receipts,
+    get_receipt,
     list_user_addresses,
     list_user_readings,
     list_user_receipts,
     list_user_tickets,
+    pay_receipt,
     link_website_by_telegram_code,
     register_telegram_user,
     search_knowledge,
@@ -46,7 +49,7 @@ from rag import ask_qwen  # noqa: F401 - alias для старых патчей/
 app = FastAPI(
     title="Ре:Акция API",
     description="Единый backend сайта и Telegram-бота: обращения, RAG и GigaChat.",
-    version="2.1.0",
+    version="2.2.0",
     docs_url="/api/docs",
     openapi_url="/api/openapi.json",
 )
@@ -123,7 +126,8 @@ def _receipts_answer(user_id: str) -> str | None:
         st_name = RECEIPT_STATUS_NAMES.get(st, st)
         lines.append(f"• {r.get('billing_period')} — {r.get('provider')}: {amount:,.2f} ₽ ({st_name})".replace(",", " "))
     head = f"Ваши последние квитанции (долг: {debt:,.2f} ₽):".replace(",", " ")
-    return head + "\n" + "\n".join(lines)
+    tail = "\nОплатить можно в разделе «Мои квитанции» на сайте или кнопкой «Оплатить» в боте."
+    return head + "\n" + "\n".join(lines) + tail
 
 
 def _meters_answer(user_id: str) -> str | None:
@@ -539,6 +543,35 @@ def user_tickets(user_id: str, limit: int = Query(default=50, ge=1, le=100)):
 def user_receipts(user_id: str, limit: int = Query(default=24, ge=1, le=100)):
     ensure_user(user_id, "web")
     return list_user_receipts(user_id, limit)
+
+
+@app.post("/api/users/{user_id}/receipts/demo", status_code=201)
+def create_demo_receipts(user_id: str):
+    ensure_user(user_id, "web")
+    return ensure_demo_receipts(user_id)
+
+
+@app.get("/api/users/{user_id}/receipts/{receipt_id}")
+def receipt_details(user_id: str, receipt_id: int):
+    receipt = get_receipt(receipt_id, user_id)
+    if not receipt:
+        raise HTTPException(status_code=404, detail="Квитанция не найдена")
+    return receipt
+
+
+@app.post("/api/users/{user_id}/receipts/{receipt_id}/pay")
+def pay_user_receipt(user_id: str, receipt_id: int):
+    receipt = get_receipt(receipt_id, user_id)
+    if not receipt:
+        raise HTTPException(status_code=404, detail="Квитанция не найдена")
+    if receipt.get("status") == "paid":
+        return receipt
+    if receipt.get("status") == "cancelled":
+        raise HTTPException(status_code=400, detail="Эта квитанция отменена, оплата невозможна")
+    paid = pay_receipt(receipt_id, user_id)
+    if not paid:
+        raise HTTPException(status_code=404, detail="Квитанция не найдена")
+    return paid
 
 
 @app.post("/api/receipts", status_code=201)

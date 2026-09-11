@@ -193,6 +193,10 @@ def register_telegram_user(
     profile = get_user_profile(user_id)
     if not profile:
         raise RuntimeError("Telegram registration was not saved")
+    try:
+        ensure_demo_receipts(user_id)
+    except Exception:
+        pass
     return profile
 
 
@@ -597,6 +601,135 @@ def list_user_receipts(user_id: str, limit: int = 24) -> list[dict[str, Any]]:
             (user_id, limit),
         ).fetchall()
     return [dict(row) for row in rows]
+
+
+def get_receipt(receipt_id: int, user_id: str | None = None) -> dict[str, Any] | None:
+    with connect() as conn:
+        if user_id is None:
+            row = conn.execute(
+                """
+                SELECT r.*, a.city, a.street, a.house, a.apartment
+                FROM receipts r
+                LEFT JOIN addresses a ON a.id=r.address_id
+                WHERE r.id=?
+                """,
+                (receipt_id,),
+            ).fetchone()
+        else:
+            row = conn.execute(
+                """
+                SELECT r.*, a.city, a.street, a.house, a.apartment
+                FROM receipts r
+                LEFT JOIN addresses a ON a.id=r.address_id
+                WHERE r.id=? AND r.user_id=?
+                """,
+                (receipt_id, user_id),
+            ).fetchone()
+    return dict(row) if row else None
+
+
+def pay_receipt(receipt_id: int, user_id: str) -> dict[str, Any] | None:
+    now = utc_now()
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT * FROM receipts WHERE id=? AND user_id=?",
+            (receipt_id, user_id),
+        ).fetchone()
+        if not row:
+            return None
+        if row["status"] in ("paid", "cancelled"):
+            full = conn.execute(
+                """
+                SELECT r.*, a.city, a.street, a.house, a.apartment
+                FROM receipts r
+                LEFT JOIN addresses a ON a.id=r.address_id
+                WHERE r.id=?
+                """,
+                (receipt_id,),
+            ).fetchone()
+            return dict(full) if full else dict(row)
+        conn.execute(
+            "UPDATE receipts SET status='paid', paid_at=?, updated_at=? WHERE id=?",
+            (now, now, receipt_id),
+        )
+        full = conn.execute(
+            """
+            SELECT r.*, a.city, a.street, a.house, a.apartment
+            FROM receipts r
+            LEFT JOIN addresses a ON a.id=r.address_id
+            WHERE r.id=?
+            """,
+            (receipt_id,),
+        ).fetchone()
+    return dict(full) if full else None
+
+
+def ensure_demo_receipts(user_id: str) -> list[dict[str, Any]]:
+    """Демо-начисления для нового профиля. Идемпотентно: если квитанции уже есть — ничего не создаёт."""
+    if list_user_receipts(user_id, 1):
+        return list_user_receipts(user_id, 24)
+    with connect() as conn:
+        addr = conn.execute(
+            "SELECT id FROM addresses WHERE user_id=? AND is_primary=1",
+            (user_id,),
+        ).fetchone()
+        address_id = addr["id"] if addr else None
+    now = datetime.now(timezone.utc)
+    periods: list[str] = []
+    dues: list[str] = []
+    y, m = now.year, now.month
+    for i in range(3):
+        mm = m - i
+        yy = y
+        while mm <= 0:
+            mm += 12
+            yy -= 1
+        periods.append(f"{yy:04d}-{mm:02d}")
+        # срок оплаты — 10-е число следующего месяца
+        nm = mm + 1
+        ny = yy
+        if nm > 12:
+            nm = 1
+            ny += 1
+        dues.append(f"{ny:04d}-{nm:02d}-10")
+    demo = [
+        {
+            "billing_period": periods[0],
+            "provider": "Томскэнергосбыт — электроэнергия",
+            "amount_cents": 184570,
+            "status": "unpaid",
+            "due_at": dues[0],
+            "paid_at": None,
+        },
+        {
+            "billing_period": periods[1] if len(periods) > 1 else periods[0],
+            "provider": "Томскводоканал — ХВС и водоотведение",
+            "amount_cents": 145050,
+            "status": "overdue",
+            "due_at": dues[1] if len(dues) > 1 else dues[0],
+            "paid_at": None,
+        },
+        {
+            "billing_period": periods[2] if len(periods) > 2 else periods[0],
+            "provider": "УК — содержание жилья",
+            "amount_cents": 312000,
+            "status": "paid",
+            "due_at": dues[2] if len(dues) > 2 else dues[0],
+            "paid_at": dues[2] if len(dues) > 2 else dues[0],
+        },
+    ]
+    for d in demo:
+        upsert_receipt(
+            user_id=user_id,
+            address_id=address_id,
+            billing_period=d["billing_period"],
+            provider=d["provider"],
+            amount_cents=d["amount_cents"],
+            status=d["status"],
+            due_at=d["due_at"],
+            paid_at=d["paid_at"],
+        )
+    return list_user_receipts(user_id, 24)
 
 
 def list_user_addresses(user_id: str) -> list[dict[str, Any]]:
